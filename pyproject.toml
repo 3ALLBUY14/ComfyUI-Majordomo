@@ -36,7 +36,7 @@ Documentation = "https://github.com/3ALLBUY14/ComfyUI-Majordomo/wiki"
 
 
 [tool.comfy]
-PublisherId = "3ALLBUY14"
+PublisherId = "allbuybuy"
 DisplayName = "Node Alignment Panel"
 Icon = "https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/icons/collapse.svg"
 Tags = ["alignment", "layout", "organization", "palette", "snap", "groups", "nodes"]
