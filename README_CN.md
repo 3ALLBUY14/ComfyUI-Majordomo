@@ -11,7 +11,7 @@
 ---
 
 <div align="center">
-<img src="doc/screenshot-cn.png" alt="面板总览" width="400">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/screenshot-cn.png" alt="面板总览" width="400">
 </div>
 
 <br>
@@ -53,7 +53,7 @@ ComfyUI 画布右下角的圆形浮动按钮是插件入口，支持以下交互
 ### 主面板
 
 <div align="center">
-<img src="doc/panel-cn.png" alt="面板总览" width="400">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/panel-cn.png" alt="面板总览" width="400">
 </div>
 
 <br>
@@ -162,15 +162,15 @@ ComfyUI 画布右下角的圆形浮动按钮是插件入口，支持以下交互
 
 **节点对齐**
 
-<img src="doc/alignment-cn.gif" alt="节点对齐演示" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/alignment-cn.gif" alt="节点对齐演示" width="600">
 
 **尺寸统一**
 
-<img src="doc/size-alignment-cn.gif" alt="尺寸统一演示" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/size-alignment-cn.gif" alt="尺寸统一演示" width="600">
 
 **颜色管理**
 
-<img src="doc/color-cn.gif" alt="颜色管理演示" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/color-cn.gif" alt="颜色管理演示" width="600">
 
 </div>
 
@@ -182,11 +182,11 @@ ComfyUI 画布右下角的圆形浮动按钮是插件入口，支持以下交互
 
 **方式一：快捷浮点弹窗**
 
-<img src="doc/handler1-cn.gif" alt="使用方式一" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/handler1-cn.gif" alt="使用方式一" width="600">
 
 **方式二：完整调整界面**
 
-<img src="doc/handler2-cn.gif" alt="使用方式二" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/handler2-cn.gif" alt="使用方式二" width="600">
 
 </div>
 
