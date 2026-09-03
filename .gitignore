@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Backup files
+*.bak
+*.bk
+*.jsbk
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.venv/
+env/
+
+# Local-only files
+*.html
+original-palette-extracted.json
+comfyui-palette-v2.json
