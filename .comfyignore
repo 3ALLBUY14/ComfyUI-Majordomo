@@ -1,0 +1,10 @@
+# Demo & documentation assets. The READMEs reference these via absolute
+# GitHub raw URLs, so they are not needed inside the published registry
+# package — excluding doc/ shrinks the package from ~20 MB to ~1.5 MB.
+doc/
+
+# Local dev artifacts & previews (not part of the runtime extension)
+*.html
+*.zip
+original-palette-extracted.json
+comfyui-palette-v2.json

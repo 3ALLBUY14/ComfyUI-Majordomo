@@ -11,7 +11,7 @@
 ---
 
 <div align="center">
-<img src="doc/screenshot-en.png" alt="Panel Overview" width="400">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/screenshot-en.png" alt="Panel Overview" width="400">
 </div>
 
 <br>
@@ -53,7 +53,7 @@ The circular floating button at the bottom-right of the canvas is the plugin ent
 ### Main Panel
 
 <div align="center">
-<img src="doc/panel-en.png" alt="Panel Overview" width="400">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/panel-en.png" alt="Panel Overview" width="400">
 </div>
 
 <br>
@@ -160,15 +160,15 @@ Button enabled/disabled states sync with canvas node selection in real time.
 
 **Node Alignment**
 
-<img src="doc/alignment-en.gif" alt="Node Alignment Demo" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/alignment-en.gif" alt="Node Alignment Demo" width="600">
 
 **Size Normalization**
 
-<img src="doc/size-alignment-en.gif" alt="Size Alignment Demo" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/size-alignment-en.gif" alt="Size Alignment Demo" width="600">
 
 **Color Management**
 
-<img src="doc/color-en.gif" alt="Color Management Demo" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/color-en.gif" alt="Color Management Demo" width="600">
 
 </div>
 
@@ -180,11 +180,11 @@ Button enabled/disabled states sync with canvas node selection in real time.
 
 **Method 1: Quick Floating Popup**
 
-<img src="doc/handler1-en.gif" alt="Handler Usage 1" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/handler1-en.gif" alt="Handler Usage 1" width="600">
 
 **Method 2: Full Adjustment Panel**
 
-<img src="doc/handler2-en.gif" alt="Handler Usage 2" width="600">
+<img src="https://raw.githubusercontent.com/3ALLBUY14/ComfyUI-Majordomo/main/doc/handler2-en.gif" alt="Handler Usage 2" width="600">
 
 </div>
 
