@@ -21,7 +21,7 @@
     "colorRedo": "重做颜色",
     "noColorUndo": "没有可撤销的颜色",
     "noColorRedo": "没有可重做的颜色",
-    "saveAsTemplate": "保存颜色",
+    "saveAsTemplate": "保存为调色板",
     "floatHintLeft": "左键",
     "floatHintRight": "右键",
     "floatHintOpen": "打开面板",
@@ -30,13 +30,15 @@
     "randomColor": "随机配色",
     "clearVram": "清理显存内存",
     "alignGap": "间距",
+    "snapDistance": "吸附",
     "undo": "撤销对齐",
     "redo": "重做对齐",
     "noUndo": "没有可撤销的操作",
     "noRedo": "没有可重做的操作",
     "pickColor": "从节点取色",
     "noNodeColor": "选中节点未找到颜色",
-    "savePalette": "将保存的颜色存为模板",
+    "eyedropper": "屏幕取色滴管",
+    "savePalette": "将最近保存的25个颜色保存为调色板",
     "paletteNamePrompt": "输入调色板名称：",
     "paletteSaved": "调色板已保存",
     "paletteDeleted": "调色板已删除",
@@ -67,6 +69,7 @@
     "groupSection": "分组",
     "createGroup": "创建分组",
     "groupCreated": "已创建分组",
-    "selectToGroup": "请选择节点以创建分组"
+    "selectToGroup": "请选择节点以创建分组",
+    "groupFontSize": "组字体"
   }
 }
