@@ -31,3 +31,6 @@ env/
 *.html
 original-palette-extracted.json
 comfyui-palette-v2.json
+
+# Bundles
+*.zip
