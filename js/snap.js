@@ -24,6 +24,15 @@ const SETTING_SNAP_DIST = "Hk.Snap.SnapDistance";
 const BRAND = "#8BC3F3";          // Node Alignment accent color
 const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 7v10"/><path d="M11 7v10"/><path d="M15 7v10"/><path d="M19 7v10"/></svg>`;
 
+// Resolve the active UI language using the same key the Node Alignment panel
+// persists ("hk-lang": "zh" | "en"). Keeps this module self-contained.
+function snapLang() {
+  try {
+    if (localStorage.getItem("hk-lang") === "zh") return "zh";
+  } catch {}
+  return "en";
+}
+
 const state = {
   enabled: false,
   snapDistPx: 8,
@@ -637,7 +646,9 @@ function mountToolbarButton() {
   injectToolbarCSS();
   const btn = document.createElement("button");
   btn.className = "comfyui-button hk-snap-btn";
-  btn.title = "Toggle Node Alignment drag snap (Alt+S, hold Shift to bypass)";
+  btn.title = snapLang() === "zh"
+    ? "节点对齐拖拽吸附开关（Alt+S，按住 Shift 可临时绕过）"
+    : "Toggle Node Alignment drag snap (Alt+S, hold Shift to bypass)";
   btn.innerHTML = `<span class="hk-snap-icon">${ICON_SVG}</span>`;
   btn.addEventListener("click", toggleEnabled);
   const group = document.createElement("div");
