@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfyui-majordomo"
-version = "1.0.0"
+version = "1.0.1"
 description = "A tool that organizes workflow nodes into clean, user-friendly layouts"
 authors = [
   {name = "ALL BUYBUY", email = "60284675+3ALLBUY14@users.noreply.github.com"}
