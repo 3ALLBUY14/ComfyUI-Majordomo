@@ -4,7 +4,25 @@
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| [v1.0.1](#v101--2026-09-12) | 2026-09-12 | Fix: save-color button label matched behavior; zh close-hint aligned; snap tooltip refreshes after language switch; removed unused locales/ |
 | [v1](#v1--2026-07-28) | 2026-07-28 | Initial release: alignment panel, 14 palettes, dual-track color, drag-to-snap, quick group, font slider |
+
+---
+
+## v1.0.1 — 2026-09-12
+
+### 🇬🇧 English
+
+- **🔧 Label fix** — The 💾 button in the color panel saves the current color to your saved list; its label is back to "Save color" (it briefly said "Save as palette", which was misleading — real palette creation is the separate "Save 25 colors as palette" action).
+- **🌐 Copy consistency** — Chinese close-hint unified to "双击关闭", matching the English "Double-click to close" (double-click anywhere on the panel outside controls closes it).
+- **🖱️ Snap tooltip** — The toolbar snap button's tooltip now refreshes on hover, so switching EN/中文 in the panel takes effect immediately without reloading the page.
+
+### 🇨🇳 中文
+
+- **🔧 文案修正** — 颜色面板中的 💾 按钮功能是把当前颜色存入「已保存」列表，文案改回「保存颜色」（此前短暂显示为「保存为调色板」，易与真正的「将最近保存的25个颜色保存为调色板」功能混淆）。
+- **🌐 中英对齐** — 中文关闭提示统一为「双击关闭」，与英文 "Double-click to close" 一致（双击面板任意非控件区域即可关闭）。
+- **🖱️ 吸附提示** — 工具栏吸附按钮的提示文字改为悬停时刷新，在面板中切换中/英文后立即生效，无需刷新页面。
+- **🧹 清理** — 移除从未被读取的 `locales/` 目录，界面文案唯一来源为 `main.js` 内置字典。
 
 ---
 
