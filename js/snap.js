@@ -646,9 +646,14 @@ function mountToolbarButton() {
   injectToolbarCSS();
   const btn = document.createElement("button");
   btn.className = "comfyui-button hk-snap-btn";
-  btn.title = snapLang() === "zh"
+  const btnTitle = () => snapLang() === "zh"
     ? "节点对齐拖拽吸附开关（Alt+S，按住 Shift 可临时绕过）"
     : "Toggle Node Alignment drag snap (Alt+S, hold Shift to bypass)";
+  btn.title = btnTitle();
+  // Tooltip text is captured at mount; refresh lazily so a language toggle
+  // in the Node Alignment panel (persisted to "hk-lang") is picked up
+  // without a page reload.
+  btn.addEventListener("mouseenter", () => { btn.title = btnTitle(); });
   btn.innerHTML = `<span class="hk-snap-icon">${ICON_SVG}</span>`;
   btn.addEventListener("click", toggleEnabled);
   const group = document.createElement("div");
