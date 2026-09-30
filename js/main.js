@@ -152,7 +152,7 @@ function D0() {
       "align:height-max": "Match tallest height",
       "align:height-min": "Match shortest height",
       "align:size-max": "Match largest size",
-      "align:size-min": "Match smallest size",
+      "align:size-min": "Shrink each to its minimum size",
       "align:horizontal-flow": "Distribute horizontally",
       "align:vertical-flow": "Distribute vertically",
       langLabel: "中",
@@ -168,7 +168,13 @@ function D0() {
       selectToGroup: "Select nodes to create group",
       groupFontSize: "Group font",
       eyedropper: "Eyedropper (pick from screen)",
-      snapDistance: "Snap"
+      snapDistance: "Snap",
+      applyColor: "Apply color",
+      harmonyPaletteOf: "Color harmony palette {a} of {o}",
+      showColorSetOf: "Show color set {a} of {o}",
+      prevSavedColors: "Prev saved colors",
+      nextSavedColors: "Next saved colors",
+      switchLanguage: "Switch language"
     },
     zh: {
       title: "节点对齐",
@@ -225,7 +231,7 @@ function D0() {
       "align:height-max": "匹配最高",
       "align:height-min": "匹配最矮",
       "align:size-max": "匹配最大",
-      "align:size-min": "匹配最小",
+      "align:size-min": "各自收紧到最小尺寸",
       "align:horizontal-flow": "水平流式排列",
       "align:vertical-flow": "垂直流式排列",
       langLabel: "EN",
@@ -241,7 +247,13 @@ function D0() {
       selectToGroup: "请选择节点以创建分组",
       groupFontSize: "组字体",
       eyedropper: "屏幕取色滴管",
-      snapDistance: "吸附"
+      snapDistance: "吸附",
+      applyColor: "应用颜色",
+      harmonyPaletteOf: "协调色配色 第 {a} / {o} 组",
+      showColorSetOf: "显示配色 第 {a} / {o} 组",
+      prevSavedColors: "上一组保存的颜色",
+      nextSavedColors: "下一组保存的颜色",
+      switchLanguage: "切换语言"
     }
   };
   function _(i) {
@@ -359,14 +371,16 @@ function D0() {
     a && a.setAttribute("aria-label", _("opacity"));
     const l = H.querySelector(".hk-custom-preview");
     l && (l.setAttribute("aria-label", _("custom")), l.title = _("custom"));
-    const c = H.querySelector(".hk-custom-save");
-    c && c.setAttribute("aria-label", _("saveColor"));
   }
   let A = [], L2 = [], J2 = [], o2 = 0;
   const de = "hk-recent-colors", E2 = 9, Q2 = ["#353535", "#3f5159", "#593930", "#335533", "#333355", "#335555", "#553355", "#665533", "#000000"], fe = "hk-saved-colors", ee = 25;
-  let f2 = Qe(), M2 = null, C2 = t0(), w2 = null, W = null, U = null, c2 = null, D2 = !1;
-  const te = /* @__PURE__ */ new WeakMap(), T2 = /* @__PURE__ */ new WeakMap();
-  function _ns(n) { let w = 150, h = 100; if (n.size && Array.isArray(n.size)) { n.size[0] && (w = n.size[0]); n.size[1] && (h = n.size[1]); } else { typeof n.width == "number" && (w = n.width); typeof n.height == "number" && (h = n.height); if (n.properties) { typeof n.properties.width == "number" && (w = n.properties.width); typeof n.properties.height == "number" && (h = n.properties.height); } } return { width: w, height: h }; }
+  let f2 = Qe(), M2 = null, C2 = t0(), w2 = null, U = null, c2 = null, D2 = !1;
+  const T2 = /* @__PURE__ */ new WeakMap();
+  // 新版 ComfyUI 前端把 node.pos/node.size 换成了 Float64Array 视图，
+  // Array.isArray 对它们返回 false；判定容器必须走"类数组"而不是 Array.isArray，
+  // 否则兜底逻辑会把真实位置/尺寸当成异常数据重置掉（撤销快照存 [0,0] 的根因）。
+  const _arrLike = (v) => !!v && typeof v.length == "number";
+  function _ns(n) { let w = 150, h = 100; if (n.size && _arrLike(n.size)) { n.size[0] > 0 && (w = n.size[0]); n.size[1] > 0 && (h = n.size[1]); } else { typeof n.width == "number" && n.width > 0 && (w = n.width); typeof n.height == "number" && n.height > 0 && (h = n.height); if (n.properties) { typeof n.properties.width == "number" && n.properties.width > 0 && (w = n.properties.width); typeof n.properties.height == "number" && n.properties.height > 0 && (h = n.properties.height); } } return { width: w, height: h }; }
   let O2 = null, ge = !1;
   const R2 = 48, Ze = 24;
   function be() {
@@ -466,7 +480,7 @@ function D0() {
   function _loadCustomPalettes() {
     try {
       const t = localStorage.getItem(_CUSTOM_PALETTE_KEY);
-      if (t) { const o = JSON.parse(t); if (Array.isArray(o)) _customPalettes = o.filter(p => p && p.name && Array.isArray(p.colors)); }
+      if (t) { const o = JSON.parse(t); if (Array.isArray(o)) _customPalettes = o.filter(p => p && p.name && Array.isArray(p.colors)).map(p => ({ ...p, colors: p.colors.map(p2).filter(Boolean) })); }
     } catch {}
   }
   function _saveCustomPalettes() {
@@ -556,6 +570,7 @@ function D0() {
     if (_fsSlEl) _fsSlEl.setAttribute("aria-label", _("groupFontSize"));
   }
   function Ae(i) {
+    if (typeof i !== "string") return null;
     const t = i.replace("#", "");
     if (t.length === 3) {
       const o = parseInt(t[0] + t[0], 16), a = parseInt(t[1] + t[1], 16), l = parseInt(t[2] + t[2], 16);
@@ -573,7 +588,8 @@ function D0() {
   }
   function re(i) {
     const t = Ae(i);
-    if (!t) return null;
+    // Malformed hex parses to NaN channels — treat like unparsable (A5)
+    if (!t || Number.isNaN(t.r + t.g + t.b)) return null;
     const o = t.r / 255, a = t.g / 255, l = t.b / 255, c = Math.max(o, a, l), p = Math.min(o, a, l), d = c - p;
     let u = 0;
     d !== 0 && (c === o ? u = (a - l) / d % 6 : c === a ? u = (l - o) / d + 2 : u = (o - a) / d + 4), u = Math.round(u * 60), u < 0 && (u += 360);
@@ -593,7 +609,9 @@ function D0() {
   }
   function P2(i) {
     const t = Ae(i);
-    return t ? Ke(t) : 0;
+    // Same NaN-channel guard as re() — a truthy garbage object must not
+    // produce a NaN luminance for a0/Ne (B4)
+    return t && !Number.isNaN(t.r + t.g + t.b) ? Ke(t) : 0;
   }
   function Ke(i) {
     const t = (o) => {
@@ -729,7 +747,7 @@ function D0() {
   }
   function Fe(i) {
     const t = p2(i);
-    t && (W && (W.value = t), U && (U.value = t.toUpperCase()), He(t));
+    t && (U && (U.value = t.toUpperCase()), He(t));
   }
   function o0(i) {
     const t = p2(i);
@@ -737,7 +755,10 @@ function D0() {
   }
   function Be(i) {
     const t = p2(i);
-      t && (oe(t, !0), _2());
+      // End the live preview FIRST (restores pre-input colors), then commit —
+      // the reverse order let _2() overwrite the just-committed color and
+      // poisoned the undo baseline (A7, same order as the SV picker path)
+      t && (_2(), oe(t, !0));
   }
   function a0(i) {
     const t = P2(i), o = P2(We);
@@ -763,6 +784,7 @@ function D0() {
     return l;
   }
   function v2(i) {
+    i = typeof i === "string" ? i : "";
     const o = i.startsWith("#") ? i : `#${i}`;
     let a = o;
     const l = re(a);
@@ -776,9 +798,10 @@ function D0() {
     const _cHsl = re(c);
     const _tc = (_cHsl && _cHsl.l >= 0.5) ? "#000000" : "#FFFFFF";
     return {
-      color: c,
-      bgcolor: a,
-      groupcolor: p,
+      // Never hand unwashed input back as colors (A5/B4)
+      color: p2(c) || "#353535",
+      bgcolor: p2(a) || "#353535",
+      groupcolor: p2(p) || "#353535",
       textcolor: _tc
     };
   }
@@ -797,6 +820,31 @@ function D0() {
     if (_dualLinked || !_titleHex || !_bodyHex) return v2(hex);
     if (_dualMode === "T") { _titleHex = hex; return _dualOpt(_titleHex, _bodyHex); }
     _bodyHex = hex; return _dualOpt(_titleHex, _bodyHex);
+  }
+  // Shared "create group from selection" — used by BOTH the align-popup button
+  // and the panel toolbar button so group colors can never diverge between the
+  // two entry points (both honor the title/body dual-track mode via _buildOpt).
+  function _hkCreateGroup() {
+    const _grp = window.HkGroups && window.HkGroups.createGroupFromSelection && window.HkGroups.createGroupFromSelection();
+    if (_grp) {
+      let _colorOpt = null;
+      if (_colorClip) {
+        _colorOpt = _colorClip;
+      } else if (f2.length > 0 && f2[0]) {
+        _colorOpt = _buildOpt(f2[0]);
+      }
+      if (_colorOpt && A.length > 0) {
+        const _graphs = /* @__PURE__ */ new Set();
+        A.forEach((u) => { u != null && u.graph && _graphs.add(u.graph); });
+        _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); });
+        A.forEach((u) => { ae(u, _colorOpt); });
+        _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.afterChange) == null ? void 0 : y.call(u); });
+        _grp.color = _colorOpt.groupcolor || _colorOpt.bgcolor || _colorOpt.color;
+        const _l = (window.LGraphCanvas == null ? void 0 : window.LGraphCanvas.active_canvas) ?? (window.app == null ? void 0 : window.app.canvas);
+        _l == null || _l.setDirty == null || _l.setDirty.call(_l, !0, !0);
+      }
+      k2(_("groupCreated") + " \u2713", "success");
+    } else k2(_("selectToGroup"), "warning");
   }
   // ── SV + Hue picker ──
   function _hsvToHex(h, s, v) {
@@ -827,7 +875,7 @@ function D0() {
     const ctx = cv.getContext("2d");
     let curH = 0, curS = 1, curV = 1;
     // Init from current color
-    const initHex = (U == null ? void 0 : U.value) || (W == null ? void 0 : W.value) || "#353535";
+    const initHex = (U == null ? void 0 : U.value) || "#353535";
     const initHsv = _hexToHsv(p2(initHex) || "#353535");
     curH = initHsv.h; curS = initHsv.s; curV = initHsv.v;
     function drawPicker() {
@@ -927,7 +975,11 @@ function D0() {
       k2(_("selectToApply"), "warning");
       return;
     }
-    _cPushUndo([...A], [...L2]);
+    if (e2.active) {
+      // Preview still on: build the undo baseline from the pre-preview colors
+      // the e2 snapshot holds — the current colors are preview-covered (A7)
+      _cPushSnapshot({ nodes: [...e2.nodes].map(([n, co]) => ({ n, color: co.color, bgcolor: co.bgcolor, groupcolor: co.groupcolor, textcolor: co.textcolor })), groups: [...e2.groups].map(([g, gc]) => ({ g, color: gc.color })) });
+    } else _cPushUndo([...A], [...L2]);
     const o = useDual ? _buildOpt(i) : v2(i), a = /* @__PURE__ */ new Set();
     t.forEach((u) => {
       u != null && u.graph && a.add(u.graph);
@@ -1027,11 +1079,11 @@ function D0() {
     }), i.addEventListener("focus", () => {
       const a = v2(t);
       W2(a), se(a);
-    }), i.addEventListener("mouseleave", () => _2()), i.addEventListener("blur", () => _2());
+    }), i.addEventListener("mouseleave", () => { _2(), D2 = !1; }), i.addEventListener("blur", () => { _2(), D2 = !1; });
   }
   function ne(i, t = !0) {
     const o = v2(i), a = o.bgcolor.toUpperCase(), l = document.createElement(t ? "button" : "div");
-    return t && (l.type = "button", l.setAttribute("aria-label", `Apply color ${a}`), l.title = `Apply color ${a}`), l.className = "hk-color-chip hk-color-chip-dual", l.style.setProperty("--hk-chip-title", o.color), l.style.setProperty("--hk-chip-body", o.bgcolor), l.style.borderColor = o.color, l.dataset.colorHex = o.bgcolor, t && s0(l, i), l;
+    return t && (l.type = "button", l.setAttribute("aria-label", `${_("applyColor")} ${a}`), l.title = `${_("applyColor")} ${a}`), l.className = "hk-color-chip hk-color-chip-dual", l.style.setProperty("--hk-chip-title", o.color), l.style.setProperty("--hk-chip-body", o.bgcolor), l.style.borderColor = o.color, l.dataset.colorHex = o.bgcolor, t && s0(l, i), l;
   }
   function le(i, t) {
     const _all = _allPalettes();
@@ -1043,7 +1095,7 @@ function D0() {
     i.replaceChildren(), _sorted.forEach((p) => {
       const d = ne(p);
       i.appendChild(d);
-    }), i.setAttribute("aria-label", `Color harmony palette ${a + 1} of ${o}`);
+    }), i.setAttribute("aria-label", _("harmonyPaletteOf").replace("{a}", a + 1).replace("{o}", o));
     const c = H == null ? void 0 : H.querySelector(".hk-palette-select");
     c && (c.value = String(a)), Pe();
   }
@@ -1074,6 +1126,29 @@ function D0() {
     });
     _grpPreviewCbs.forEach((cb) => { try { cb(); } catch (e) {} });
   }
+  function _hkBindClipButtons(copyBtn, pasteBtn, quick, afterPaste) {
+    copyBtn.addEventListener("click", (P) => {
+      quick && (P.stopPropagation(), _2());
+      if (!A.length && !L2.length) { k2(_("selectToApply"), "warning"); return; }
+      let raw = null;
+      for (const n of A) { if (n) { raw = { color: n.color, bgcolor: n.bgcolor, groupcolor: n.groupcolor, textcolor: n.textcolor }; break; } }
+      if (!raw) for (const g of L2) { if (g && g.color) { raw = { color: g.color, bgcolor: g.color, groupcolor: g.color, textcolor: void 0 }; break; } }
+      if (raw) {
+        _colorClip = raw, k2(_("copyColor") + " ✓", "success");
+        _clipBtns[quick ? "quickCopy" : "mainCopy"] = copyBtn, _clipBtns[quick ? "quickPaste" : "mainPaste"] = pasteBtn, _updateClipUI();
+        copyBtn.classList.add("clip-flash"), setTimeout(() => copyBtn.classList.remove("clip-flash"), 600);
+      } else k2(_("noNodeColor"), "info");
+    }), pasteBtn.addEventListener("click", (P) => {
+      quick && (P.stopPropagation(), _2());
+      if (!_colorClip) { k2(_("noColorClip"), "info"); return; }
+      if (!A.length && !L2.length) { k2(_("selectToApply"), "warning"); return; }
+      _cPushUndo([...A], [...L2]);
+      const t = [...A, ...L2], a = /* @__PURE__ */ new Set();
+      t.forEach((u) => { u != null && u.graph && a.add(u.graph); }), a.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); }), t.forEach((u) => { ae(u, _colorClip); }), a.forEach((u) => { var y; return (y = u == null ? void 0 : u.afterChange) == null ? void 0 : y.call(u); }), Pe();
+      { const _l = (window.LGraphCanvas == null ? void 0 : window.LGraphCanvas.active_canvas) ?? (window.app == null ? void 0 : window.app.canvas); _l == null ? void 0 : _l.setDirty == null ? void 0 : _l.setDirty.call(_l, !0, !0); }
+      k2(_("pasteColor") + " ✓", "success"), afterPaste == null || afterPaste();
+    });
+  }
   document.addEventListener("mousemove", (i) => {
     ce.x = i.clientX, ce.y = i.clientY;
   });
@@ -1082,6 +1157,13 @@ function D0() {
     S2(), F2 = !0;
     const i = T.offsetWidth || 280, t = T.offsetHeight || 500;
     let o = ce.x - i / 2, a = ce.y - t / 2;
+    // Restore last dragged position ("hk-position", written by the header-drag
+    // mouseup handler) — fall back to centering on the mouse for first open
+    try {
+      const _sv = JSON.parse(window.localStorage.getItem("hk-position") || "null");
+      if (_sv && _sv.left != null && _sv.top != null) o = _sv.left, a = _sv.top;
+    } catch {
+    }
     const l = 20;
     o = Math.max(l, Math.min(o, window.innerWidth - i - l)), a = Math.max(l, Math.min(a, window.innerHeight - t - l)), T.style.left = o + "px", T.style.top = a + "px", T.style.transform = "", T.classList.add("visible"), v && v.classList.add("hidden");
     const c = document.querySelector(".hk-quick-color-popup");
@@ -1269,25 +1351,10 @@ function D0() {
         o0(hex), k2(_("pickColor") + " \u2713", "success"), w();
       }), _bar.appendChild(_pick);
       const _qCopy = document.createElement("button");
-      _qCopy.type = "button", _qCopy.className = "hk-quick-copy", _qCopy.innerHTML = "\u{1F4CB}", _qCopy.title = _("copyColor"), _qCopy.setAttribute("aria-label", _("copyColor")), _qCopy.addEventListener("click", (P) => {
-        P.stopPropagation(), _2();
-        if (!A.length && !L2.length) { k2(_("selectToApply"), "warning"); return; }
-        let raw = null;
-        for (const n of A) { if (n) { raw = { color: n.color, bgcolor: n.bgcolor, groupcolor: n.groupcolor, textcolor: n.textcolor }; break; } }
-        if (!raw) for (const g of L2) { if (g && g.color) { raw = { color: g.color, bgcolor: g.color, groupcolor: g.color, textcolor: void 0 }; break; } }
-        if (raw) { _colorClip = raw, k2(_("copyColor") + " ✓", "success"); _clipBtns.quickCopy = _qCopy; _clipBtns.quickPaste = _qPaste; _updateClipUI(); _qCopy.classList.add("clip-flash"); setTimeout(() => _qCopy.classList.remove("clip-flash"), 600); } else k2(_("noNodeColor"), "info");
-      }), _bar.appendChild(_qCopy);
+      _qCopy.type = "button", _qCopy.className = "hk-quick-copy", _qCopy.innerHTML = "\u{1F4CB}", _qCopy.title = _("copyColor"), _qCopy.setAttribute("aria-label", _("copyColor"));
       const _qPaste = document.createElement("button");
-      _qPaste.type = "button", _qPaste.className = "hk-quick-paste", _qPaste.innerHTML = "\u{1F4E5}", _qPaste.title = _("pasteColor"), _qPaste.setAttribute("aria-label", _("pasteColor")), _qPaste.addEventListener("click", (P) => {
-        P.stopPropagation(), _2();
-        if (!_colorClip) { k2(_("noColorClip"), "info"); return; }
-        if (!A.length && !L2.length) { k2(_("selectToApply"), "warning"); return; }
-        _cPushUndo([...A], [...L2]);
-        const t = [...A, ...L2], a = /* @__PURE__ */ new Set();
-        t.forEach((u) => { u != null && u.graph && a.add(u.graph); }), a.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); }), t.forEach((u) => { ae(u, _colorClip); }), a.forEach((u) => { var y; return (y = u == null ? void 0 : u.afterChange) == null ? void 0 : y.call(u); }), Pe();
-        { const _l = (window.LGraphCanvas == null ? void 0 : window.LGraphCanvas.active_canvas) ?? (window.app == null ? void 0 : window.app.canvas); _l == null ? void 0 : _l.setDirty == null ? void 0 : _l.setDirty.call(_l, !0, !0); }
-        k2(_("pasteColor") + " ✓", "success"), w();
-      }), _bar.appendChild(_qPaste), N.appendChild(_bar);
+      _qPaste.type = "button", _qPaste.className = "hk-quick-paste", _qPaste.innerHTML = "\u{1F4E5}", _qPaste.title = _("pasteColor"), _qPaste.setAttribute("aria-label", _("pasteColor"));
+      _hkBindClipButtons(_qCopy, _qPaste, !0, w), _bar.appendChild(_qCopy), _bar.appendChild(_qPaste), N.appendChild(_bar);
       _clipBtns.quickCopy = _qCopy; _clipBtns.quickPaste = _qPaste; _updateClipUI();
     }, s = () => {
       if (!v) return;
@@ -1383,27 +1450,7 @@ function D0() {
       _grpBtn.addEventListener("mouseenter", () => { Ge(_grpBtn, _("createGroup")); _grpUpdatePreview(); });
       _grpBtn.addEventListener("mouseleave", () => { ze(); });
       _grpBtn.addEventListener("click", () => {
-        ze(), Y();
-        const _grp = window.HkGroups && window.HkGroups.createGroupFromSelection && window.HkGroups.createGroupFromSelection();
-        if (_grp) {
-          let _colorOpt = null;
-          if (_colorClip) {
-            _colorOpt = _colorClip;
-          } else if (f2.length > 0 && f2[0]) {
-            _colorOpt = _buildOpt(f2[0]);
-          }
-          if (_colorOpt && A.length > 0) {
-            const _graphs = /* @__PURE__ */ new Set();
-            A.forEach((u) => { u != null && u.graph && _graphs.add(u.graph); });
-            _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); });
-            A.forEach((u) => { ae(u, _colorOpt); });
-            _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.afterChange) == null ? void 0 : y.call(u); });
-            _grp.color = _colorOpt.groupcolor || _colorOpt.bgcolor || _colorOpt.color;
-            const _l = (window.LGraphCanvas == null ? void 0 : window.LGraphCanvas.active_canvas) ?? (window.app == null ? void 0 : window.app.canvas);
-            _l == null || _l.setDirty == null || _l.setDirty.call(_l, !0, !0);
-          }
-          k2(_("groupCreated") + " \u2713", "success");
-        } else k2(_("selectToGroup"), "warning");
+        ze(), Y(), _hkCreateGroup();
       }), Z.appendChild(_grpBtn);
       const _fsRow = document.createElement("div");
       _fsRow.className = "hk-grp-font-row";
@@ -1563,7 +1610,7 @@ function D0() {
     const S = document.createElement("img");
     S.src = he, S.alt = "", S.draggable = !1, s.appendChild(S);
     const O = document.createElement("span");
-    O.textContent = _("title"), O.setAttribute("data-i18n", "title"), s.appendChild(O), d2 = document.createElement("button"), d2.type = "button", d2.className = "hk-lang-toggle", d2.setAttribute("aria-label", "Switch language"), d2.textContent = _("langLabel"), d2.addEventListener("click", () => {
+    O.textContent = _("title"), O.setAttribute("data-i18n", "title"), s.appendChild(O), d2 = document.createElement("button"), d2.type = "button", d2.className = "hk-lang-toggle", d2.setAttribute("aria-label", _("switchLanguage")), d2.setAttribute("data-i18n-label", "switchLanguage"), d2.textContent = _("langLabel"), d2.addEventListener("click", () => {
       x2 = x2 === "en" ? "zh" : "en", Te(x2), Ie();
     }), w.appendChild(s);
     const J = document.createElement("div");
@@ -1597,10 +1644,10 @@ function D0() {
     const _snapLabel = document.createElement("span");
     _snapLabel.className = "hk-spacing-label", _snapLabel.textContent = _("snapDistance"), _snapLabel.setAttribute("data-i18n", "snapDistance"), _snapLabel.style.cssText = "margin-left:auto;min-width:fit-content";
     const _snapInput = document.createElement("input");
-    _snapInput.type = "number", _snapInput.min = "4", _snapInput.max = "16", _snapInput.step = "1", _snapInput.className = "hk-spacing-input", _snapInput.style.cssText = "width:40px;padding:2px 4px;border:1px solid #444;border-radius:4px;background:#222;color:#eee;font-size:11px";
+    _snapInput.id = "hk-snap-dist-input", _snapInput.type = "number", _snapInput.min = "4", _snapInput.max = "16", _snapInput.step = "1", _snapInput.className = "hk-spacing-input", _snapInput.style.cssText = "width:40px;padding:2px 4px;border:1px solid #444;border-radius:4px;background:#222;color:#eee;font-size:11px";
     if (window.HkSnap) { _snapInput.value = window.HkSnap.getSnapDist(); }
     else { _snapInput.value = 8; }
-    _snapInput.title = _("snapDistance"), _snapInput.setAttribute("aria-label", _("snapDistance"));
+    _snapInput.title = _("snapDistance"), _snapInput.setAttribute("aria-label", _("snapDistance")), _snapInput.setAttribute("data-i18n-label", "snapDistance");
     _snapInput.addEventListener("change", () => {
       const v = parseInt(_snapInput.value);
       if (!isNaN(v) && v >= 4 && v <= 16) {
@@ -1661,7 +1708,7 @@ function D0() {
     h2.className = "hk-palette-dots", h2.setAttribute("role", "tablist");
     const r = [], L = () => {
       const n = _paletteCount(), h = (o2 - 1 + n) % n, E = (o2 + 1) % n;
-      n2.setAttribute("aria-label", `Show color set ${h + 1} of ${n}`), a2.setAttribute("aria-label", `Show color set ${E + 1} of ${n}`), Z.textContent = `${o2 + 1}/${n}`, K.value = String(o2);
+      n2.setAttribute("aria-label", _("showColorSetOf").replace("{a}", h + 1).replace("{o}", n)), a2.setAttribute("aria-label", _("showColorSetOf").replace("{a}", E + 1).replace("{o}", n)), Z.textContent = `${o2 + 1}/${n}`, K.value = String(o2);
       _delPalBtn.style.display = _isCustomPalette(o2) ? "" : "none";
     }, Y = () => {
       r.forEach((n, h) => {
@@ -1734,7 +1781,6 @@ function D0() {
     j.className = "hk-custom-row-bottom", c2 = document.createElement("button"), c2.type = "button", c2.className = "hk-custom-preview", c2.setAttribute("data-label", _("colorPreview")), c2.setAttribute("data-i18n-label", "colorPreview"), c2.setAttribute("aria-label", _("custom")), c2.title = _("custom"), c2.addEventListener("click", () => {
       _openSvPicker(c2, (hex) => { Fe(hex); if (!A.length && !L2.length) return; const q = _buildOpt(hex); W2(q), se(q); }, (hex) => { _2(); oe(hex, !0); });
     }), j.appendChild(c2);
-    W = null;
     const _toolBar = document.createElement("div");
     _toolBar.className = "hk-custom-toolbar";
     const _pickBtn = document.createElement("button");
@@ -1764,23 +1810,10 @@ function D0() {
     } else { _eyeBtn.style.display = "none"; }
     _toolBar.appendChild(_eyeBtn);
     const _copyBtn = document.createElement("button");
-    _copyBtn.type = "button", _copyBtn.className = "hk-copy-btn", _copyBtn.innerHTML = "\u{1F4CB}", _copyBtn.title = _("copyColor"), _copyBtn.setAttribute("aria-label", _("copyColor")), _copyBtn.setAttribute("data-i18n-label", "copyColor"), _copyBtn.addEventListener("click", () => {
-      if (!A.length && !L2.length) { k2(_("selectToApply"), "warning"); return; }
-      let raw = null;
-      for (const n of A) { if (n) { raw = { color: n.color, bgcolor: n.bgcolor, groupcolor: n.groupcolor, textcolor: n.textcolor }; break; } }
-      if (!raw) for (const g of L2) { if (g && g.color) { raw = { color: g.color, bgcolor: g.color, groupcolor: g.color, textcolor: void 0 }; break; } }
-      if (raw) { _colorClip = raw, k2(_("copyColor") + " ✓", "success"); _clipBtns.mainCopy = _copyBtn; _clipBtns.mainPaste = _pasteBtn; _updateClipUI(); _copyBtn.classList.add("clip-flash"); setTimeout(() => _copyBtn.classList.remove("clip-flash"), 600); } else k2(_("noNodeColor"), "info");
-    }), _toolBar.appendChild(_copyBtn);
+    _copyBtn.type = "button", _copyBtn.className = "hk-copy-btn", _copyBtn.innerHTML = "\u{1F4CB}", _copyBtn.title = _("copyColor"), _copyBtn.setAttribute("aria-label", _("copyColor")), _copyBtn.setAttribute("data-i18n-label", "copyColor");
     const _pasteBtn = document.createElement("button");
-    _pasteBtn.type = "button", _pasteBtn.className = "hk-paste-btn", _pasteBtn.innerHTML = "\u{1F4E5}", _pasteBtn.title = _("pasteColor"), _pasteBtn.setAttribute("aria-label", _("pasteColor")), _pasteBtn.setAttribute("data-i18n-label", "pasteColor"), _pasteBtn.addEventListener("click", () => {
-      if (!_colorClip) { k2(_("noColorClip"), "info"); return; }
-      if (!A.length && !L2.length) { k2(_("selectToApply"), "warning"); return; }
-      _cPushUndo([...A], [...L2]);
-      const t = [...A, ...L2], a = /* @__PURE__ */ new Set();
-      t.forEach((u) => { u != null && u.graph && a.add(u.graph); }), a.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); }), t.forEach((u) => { ae(u, _colorClip); }), a.forEach((u) => { var y; return (y = u == null ? void 0 : u.afterChange) == null ? void 0 : y.call(u); }), Pe();
-      { const _l = (window.LGraphCanvas == null ? void 0 : window.LGraphCanvas.active_canvas) ?? (window.app == null ? void 0 : window.app.canvas); _l == null ? void 0 : _l.setDirty == null ? void 0 : _l.setDirty.call(_l, !0, !0); }
-      k2(_("pasteColor") + " ✓", "success");
-    }), _toolBar.appendChild(_pasteBtn);
+    _pasteBtn.type = "button", _pasteBtn.className = "hk-paste-btn", _pasteBtn.innerHTML = "\u{1F4E5}", _pasteBtn.title = _("pasteColor"), _pasteBtn.setAttribute("aria-label", _("pasteColor")), _pasteBtn.setAttribute("data-i18n-label", "pasteColor");
+    _hkBindClipButtons(_copyBtn, _pasteBtn, !1), _toolBar.appendChild(_copyBtn), _toolBar.appendChild(_pasteBtn);
     _clipBtns.mainCopy = _copyBtn; _clipBtns.mainPaste = _pasteBtn; _updateClipUI();
     const _grpBtn2 = document.createElement("button");
     _grpBtn2.type = "button", _grpBtn2.className = "hk-pick-btn hk-quick-group-btn", _grpBtn2.innerHTML = "\u{1F5D2}\uFE0F", _grpBtn2.title = _("createGroup"), _grpBtn2.setAttribute("aria-label", _("createGroup")), _grpBtn2.setAttribute("data-i18n-label", "createGroup");
@@ -1794,23 +1827,7 @@ function D0() {
     _grpUpdatePreview2();
     _grpPreviewCbs.push(_grpUpdatePreview2);
     _grpBtn2.addEventListener("click", () => {
-      const _grp = window.HkGroups && window.HkGroups.createGroupFromSelection && window.HkGroups.createGroupFromSelection();
-      if (_grp) {
-        let _colorOpt = null;
-        if (_colorClip) { _colorOpt = _colorClip; }
-        else if (f2.length > 0 && f2[0]) { _colorOpt = v2(f2[0]); }
-        if (_colorOpt && A.length > 0) {
-          const _graphs = /* @__PURE__ */ new Set();
-          A.forEach((u) => { u != null && u.graph && _graphs.add(u.graph); });
-          _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); });
-          A.forEach((u) => { ae(u, _colorOpt); });
-          _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.afterChange) == null ? void 0 : y.call(u); });
-          _grp.color = _colorOpt.groupcolor || _colorOpt.bgcolor || _colorOpt.color;
-          const _l = (window.LGraphCanvas == null ? void 0 : window.LGraphCanvas.active_canvas) ?? (window.app == null ? void 0 : window.app.canvas);
-          _l == null || _l.setDirty == null || _l.setDirty.call(_l, !0, !0);
-        }
-        k2(_("groupCreated") + " \u2713", "success");
-      } else k2(_("selectToGroup"), "warning");
+      _hkCreateGroup();
     }), _toolBar.appendChild(_grpBtn2);
     const R = document.createElement("button");
     R.type = "button", R.className = "hk-custom-save hk-custom-save-icon", R.innerHTML = "\u{1F4BE}", R.title = _("saveAsTemplate"), R.setAttribute("aria-label", _("saveAsTemplate")), R.setAttribute("data-i18n-label", "saveAsTemplate"), _toolBar.appendChild(R), C.appendChild(j), C.appendChild(_toolBar), $.appendChild(C);
@@ -1819,12 +1836,12 @@ function D0() {
     const _savedRow = document.createElement("div");
     _savedRow.className = "hk-saved-row";
     const _savedLeft = document.createElement("button");
-    _savedLeft.type = "button", _savedLeft.className = "hk-saved-nav hk-saved-nav-prev", _savedLeft.innerHTML = "&#9664;", _savedLeft.setAttribute("aria-label", "Prev saved colors"), _savedLeft.addEventListener("click", () => {
+    _savedLeft.type = "button", _savedLeft.className = "hk-saved-nav hk-saved-nav-prev", _savedLeft.innerHTML = "&#9664;", _savedLeft.setAttribute("aria-label", _("prevSavedColors")), _savedLeft.addEventListener("click", () => {
       if (_savedPage > 0) { _savedPage--; Me(); _updateSavedNav(); }
     }), _savedRow.appendChild(_savedLeft);
     w2 = document.createElement("div"), w2.className = "hk-color-recent hk-saved-strip", Me(), _savedRow.appendChild(w2);
     const _savedRight = document.createElement("button");
-    _savedRight.type = "button", _savedRight.className = "hk-saved-nav hk-saved-nav-next", _savedRight.innerHTML = "&#9654;", _savedRight.setAttribute("aria-label", "Next saved colors"), _savedRight.addEventListener("click", () => {
+    _savedRight.type = "button", _savedRight.className = "hk-saved-nav hk-saved-nav-next", _savedRight.innerHTML = "&#9654;", _savedRight.setAttribute("aria-label", _("nextSavedColors")), _savedRight.addEventListener("click", () => {
       const _max = Math.max(0, Math.ceil(C2.length / 9) - 1);
       if (_savedPage < _max) { _savedPage++; Me(); _updateSavedNav(); }
     }), _savedRow.appendChild(_savedRight), $.appendChild(_savedRow);
@@ -1840,15 +1857,15 @@ function D0() {
     Fe(u2);
     const j2 = (n, h) => {
       const E = p2(n);
-      if (!E || (h === "color" && U && (U.value = E.toUpperCase()), h === "text" && W && (W.value = E), He(E), !A.length && !L2.length)) return;
+      if (!E || (h === "color" && U && (U.value = E.toUpperCase()), He(E), !A.length && !L2.length)) return;
       const q = _buildOpt(E);
       W2(q), se(q);
     };
-    W == null || W.addEventListener("input", () => j2(W.value, "color")), W == null || W.addEventListener("change", () => Be(W.value)), W == null || W.addEventListener("click", () => W2(v2(W.value))), W == null || W.addEventListener("blur", () => _2()), U == null || U.addEventListener("input", () => j2(U.value, "text")), U == null || U.addEventListener("keydown", (n) => {
+    U == null || U.addEventListener("input", () => j2(U.value, "text")), U == null || U.addEventListener("keydown", (n) => {
       n.key === "Enter" && (n.preventDefault(), Be(U.value));
     }), U == null || U.addEventListener("blur", () => _2());
     const m2 = () => {
-      const n = (U == null ? void 0 : U.value) || (W == null ? void 0 : W.value) || u2, h = p2(n);
+      const n = (U == null ? void 0 : U.value) || u2, h = p2(n);
       h && (r0(h), R.classList.add("hk-save-flash"), window.setTimeout(() => R.classList.remove("hk-save-flash"), 350), _updateSavedNav());
     };
     R.addEventListener("click", m2), C.addEventListener("keydown", (n) => {
@@ -1915,9 +1932,14 @@ function D0() {
     }));
   }
   function _hkRestore(snapshot) {
+    const graph = window.app?.graph;
     snapshot.forEach(s => {
-      if (s.node && s.node.pos) {
-        s.node.pos[0] = s.pos[0], s.node.pos[1] = s.pos[1];
+      // Skip nodes no longer in the current graph (undo stack survives
+      // workflow loads / node deletions) — same guard as _cRestore
+      // 新前端的 node.pos 是 Float64Array 视图：元素写入只改缓存不改模型，
+      // 会被前端下次同步打回；必须整组赋值走 setter 才是持久写（旧前端是普通属性，同样兼容）
+      if (s.node && graph && graph._nodes && graph._nodes.includes(s.node)) {
+        s.node.pos = [s.pos[0], s.pos[1]];
         if (typeof s.node.x == "number") s.node.x = s.pos[0];
         if (typeof s.node.y == "number") s.node.y = s.pos[1];
         if (s.size) {
@@ -1967,6 +1989,9 @@ function D0() {
   let _cUndoBtn = null, _cRedoBtn = null;
   function _cPushUndo(nodes, groups) {
     const snap = { nodes: nodes.map(n => ({ n, color: n.color, bgcolor: n.bgcolor, groupcolor: n.groupcolor, textcolor: n.textcolor })), groups: groups.map(g => ({ g, color: g.color })) };
+    _cPushSnapshot(snap);
+  }
+  function _cPushSnapshot(snap) {
     _cUndoStack.push(snap);
     if (_cUndoStack.length > 50) _cUndoStack.shift();
     _cRedoStack = [];
@@ -1988,8 +2013,10 @@ function D0() {
   function _cUndo() {
     if (!_cUndoStack.length) { k2(_("noColorUndo"), "info"); return; }
     const prev = _cUndoStack.pop();
-    const nodes = [...A], groups = [...L2];
-    const curr = { nodes: nodes.map(n => ({ n, color: n.color, bgcolor: n.bgcolor, groupcolor: n.groupcolor, textcolor: n.textcolor })), groups: groups.map(g => ({ g, color: g.color })) };
+    // Redo baseline = the nodes THIS operation changed (taken from prev),
+    // holding their current post-change colors — not the current selection,
+    // which may have been cleared since (A8, mirrors _hkUndo)
+    const curr = { nodes: prev.nodes.map(s => ({ n: s.n, color: s.n.color, bgcolor: s.n.bgcolor, groupcolor: s.n.groupcolor, textcolor: s.n.textcolor })), groups: prev.groups.map(s => ({ g: s.g, color: s.g.color })) };
     _cRedoStack.push(curr);
     _cRestore(prev);
     _hkRefreshCanvas();
@@ -1998,8 +2025,7 @@ function D0() {
   function _cRedo() {
     if (!_cRedoStack.length) { k2(_("noColorRedo"), "info"); return; }
     const next = _cRedoStack.pop();
-    const nodes = [...A], groups = [...L2];
-    const curr = { nodes: nodes.map(n => ({ n, color: n.color, bgcolor: n.bgcolor, groupcolor: n.groupcolor, textcolor: n.textcolor })), groups: groups.map(g => ({ g, color: g.color })) };
+    const curr = { nodes: next.nodes.map(s => ({ n: s.n, color: s.n.color, bgcolor: s.n.bgcolor, groupcolor: s.n.groupcolor, textcolor: s.n.textcolor })), groups: next.groups.map(s => ({ g: s.g, color: s.g.color })) };
     _cUndoStack.push(curr);
     _cRestore(next);
     _hkRefreshCanvas();
@@ -2018,14 +2044,14 @@ function D0() {
         let u = d[0].pos[1];
         const y = /* @__PURE__ */ new Map();
         d.forEach((e) => {
-          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, y.set(e.id, {
+          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, y.set(e, {
             x: a,
             y: u,
             width: h,
             height: n
           }), u += n + _alignGap;
         }), t.forEach((e) => {
-          o.push(y.get(e.id));
+          o.push(y.get(e));
         });
         break;
       case "right":
@@ -2033,14 +2059,14 @@ function D0() {
         let k = x[0].pos[1];
         const N = /* @__PURE__ */ new Map();
         x.forEach((e) => {
-          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, N.set(e.id, {
+          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, N.set(e, {
             x: l - h,
             y: k,
             width: h,
             height: n
           }), k += n + _alignGap;
         }), t.forEach((e) => {
-          o.push(N.get(e.id));
+          o.push(N.get(e));
         });
         break;
       case "top":
@@ -2048,14 +2074,14 @@ function D0() {
         let F = X[0].pos[0];
         const f = /* @__PURE__ */ new Map();
         X.forEach((e) => {
-          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, f.set(e.id, {
+          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, f.set(e, {
             x: F,
             y: c,
             width: h,
             height: n
           }), F += h + _alignGap;
         }), t.forEach((e) => {
-          o.push(f.get(e.id));
+          o.push(f.get(e));
         });
         break;
       case "bottom":
@@ -2063,14 +2089,14 @@ function D0() {
         let s = a;
         const S = /* @__PURE__ */ new Map();
         w.forEach((e) => {
-          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, S.set(e.id, {
+          let n = 100, h = 150, _sz = _ns(e); n = _sz.height, h = _sz.width, S.set(e, {
             x: s,
             y: p - n,
             width: h,
             height: n
           }), s += h + _alignGap;
         }), t.forEach((e) => {
-          o.push(S.get(e.id));
+          o.push(S.get(e));
         });
         break;
       case "height-center":
@@ -2078,14 +2104,14 @@ function D0() {
         let $ = G[0].pos[1];
         const g = /* @__PURE__ */ new Map();
         G.forEach((e) => {
-          let n = 150, h = 100, _sz = _ns(e); n = _sz.width, h = _sz.height, g.set(e.id, {
+          let n = 150, h = 100, _sz = _ns(e); n = _sz.width, h = _sz.height, g.set(e, {
             x: i2 - n / 2,
             y: $,
             width: n,
             height: h
           }), $ += h + _alignGap;
         }), t.forEach((e) => {
-          o.push(g.get(e.id));
+          o.push(g.get(e));
         });
         break;
       case "width-center":
@@ -2093,14 +2119,14 @@ function D0() {
         let Z = n2[0].pos[0];
         const a2 = /* @__PURE__ */ new Map();
         n2.forEach((e) => {
-          let n = 150, h = 100, _sz = _ns(e); n = _sz.width, h = _sz.height, a2.set(e.id, {
+          let n = 150, h = 100, _sz = _ns(e); n = _sz.width, h = _sz.height, a2.set(e, {
             x: Z,
             y: V - h / 2,
             width: n,
             height: h
           }), Z += n + _alignGap;
         }), t.forEach((e) => {
-          o.push(a2.get(e.id));
+          o.push(a2.get(e));
         });
         break;
       case "horizontal-flow":
@@ -2113,11 +2139,11 @@ function D0() {
         const h2 = Math.min(...r2.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[0] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[0] : typeof e.x == "number" ? e.x : 0)), r = Math.min(...r2.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[1] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[1] : typeof e.y == "number" ? e.y : 0)), L = r2.map((e) => ({
           ...e,
           pos: e.pos ? [...e.pos] : [e.x || 0, e.y || 0],
-          _calculatedSize: e.size && Array.isArray(e.size) ? [e.size[0], e.size[1]] : [e.width || 150, e.height || 100]
+          _calculatedSize: e.size && _arrLike(e.size) ? [e.size[0], e.size[1]] : [e.width || 150, e.height || 100]
         })), Y = q2(L), M = G2(L, Y), m = _alignGap, C = _alignGap, z = 0, P = {};
         L.forEach((e) => {
           var n;
-          if (e && e.id) {
+          if (e && e.id != null) {
             const h = ((n = M[e.id]) == null ? void 0 : n.level) ?? 0;
             P[h] || (P[h] = []), P[h].push(e);
           }
@@ -2127,7 +2153,7 @@ function D0() {
           const h = parseInt(e);
           if (n && n.length > 0) {
             n.sort((b, D) => {
-              const s2 = b && b.id && M[b.id] ? M[b.id].order : 0, I = D && D.id && M[D.id] ? M[D.id].order : 0;
+              const s2 = b && b.id != null && M[b.id] ? M[b.id].order : 0, I = D && D.id != null && M[D.id] ? M[D.id].order : 0;
               return s2 - I;
             });
             let E = h2;
@@ -2163,11 +2189,11 @@ function D0() {
         const Q = Math.min(...R.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[0] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[0] : typeof e.x == "number" ? e.x : 0)), l2 = Math.min(...R.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[1] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[1] : typeof e.y == "number" ? e.y : 0)), u2 = R.map((e) => ({
           ...e,
           pos: e.pos ? [...e.pos] : [e.x || 0, e.y || 0],
-          _calculatedSize: e.size && Array.isArray(e.size) ? [e.size[0], e.size[1]] : [e.width || 150, e.height || 100]
+          _calculatedSize: e.size && _arrLike(e.size) ? [e.size[0], e.size[1]] : [e.width || 150, e.height || 100]
         })), j2 = q2(u2), m2 = G2(u2, j2), V2 = _alignGap, z2 = _alignGap, B2 = 0, t2 = {};
         u2.forEach((e) => {
           var n;
-          if (e && e.id) {
+          if (e && e.id != null) {
             const h = ((n = m2[e.id]) == null ? void 0 : n.level) ?? 0;
             t2[h] || (t2[h] = []), t2[h].push(e);
           }
@@ -2177,7 +2203,7 @@ function D0() {
           const h = parseInt(e);
           if (n && n.length > 0) {
             n.sort((b, D) => {
-              const s2 = b && b.id && m2[b.id] ? m2[b.id].order : 0, I = D && D.id && m2[D.id] ? m2[D.id].order : 0;
+              const s2 = b && b.id != null && m2[b.id] ? m2[b.id].order : 0, I = D && D.id != null && m2[D.id] ? m2[D.id].order : 0;
               return s2 - I;
             });
             let E = l2;
@@ -2221,7 +2247,7 @@ function D0() {
             if (b)
               try {
                 const D = b.call(e);
-                D && D.length >= 2 && D[0] !== void 0 && D[1] !== void 0 ? (E = D[0], q = D[1] + _alignGap) : typeof D == "number" ? (E = n, q = D + _alignGap) : (E = n, q = h);
+                D && D.length >= 2 && D[0] !== void 0 && D[1] !== void 0 && Number.isFinite(D[0]) && Number.isFinite(D[1]) ? (E = Math.max(1, D[0]), q = Math.max(1, D[1])) : typeof D == "number" && Number.isFinite(D) ? (E = n, q = Math.max(1, D)) : (E = n, q = h);
               } catch {
                 E = n, q = h;
               }
@@ -2234,7 +2260,7 @@ function D0() {
             if (D)
               try {
                 const I = D.call(e);
-                I && I.length >= 2 && I[1] !== void 0 ? s2 = I[1] + _alignGap : typeof I == "number" && (s2 = I + _alignGap);
+                I && I.length >= 2 && I[1] !== void 0 && Number.isFinite(I[1]) ? s2 = Math.max(1, I[1]) : typeof I == "number" && Number.isFinite(I) && (s2 = Math.max(1, I));
               } catch {
               }
             q = s2 && s2 > b ? s2 : b;
@@ -2256,12 +2282,6 @@ function D0() {
     const i = window.app.graph;
     A = Object.values(i._nodes || {}).filter((p) => p && p.is_selected), L2 = (Array.isArray(i._groups) ? i._groups : []).filter((p) => p && p.selected);
     A.forEach((p) => {
-      if (!te.has(p)) {
-        let sw = 150, sh = 100;
-        if (p.size && Array.isArray(p.size)) { p.size[0] && (sw = p.size[0]); p.size[1] && (sh = p.size[1]); }
-        else { typeof p.width == "number" && (sw = p.width); typeof p.height == "number" && (sh = p.height); p.properties && (typeof p.properties.width == "number" && (sw = p.properties.width), typeof p.properties.height == "number" && (sh = p.properties.height)); }
-        te.set(p, { width: sw, height: sh });
-      }
       if (!T2.has(p) && typeof p.computeSize == "function") { T2.set(p, p.computeSize.bind(p)); }
     });
     const a = A.length > 1;
@@ -2280,8 +2300,10 @@ function D0() {
   function q2(i) {
     const t = {}, o = i.filter((a) => a && a.id !== void 0 && a.id !== null);
     return o.forEach((a) => {
-      const l = a.id || `node_${o.indexOf(a)}`;
-      a.id = l, t[l] = { inputs: [], outputs: [] }, a.inputs && Array.isArray(a.inputs) && a.inputs.forEach((c, p) => {
+      // Read-only: never write the key back onto the node — _flowAlignment
+      // passes REAL graph nodes here, and id 0 is a valid litegraph id (A1)
+      const l = a.id;
+      t[l] = { inputs: [], outputs: [] }, a.inputs && Array.isArray(a.inputs) && a.inputs.forEach((c, p) => {
         c && c.link !== null && c.link !== void 0 && t[l].inputs.push({
           index: p,
           link: c.link,
@@ -2318,32 +2340,39 @@ function D0() {
     return null;
   }
   function G2(i, t) {
-    const o = {}, a = /* @__PURE__ */ new Set(), l = i.filter((u) => u && u.id), c = l.filter((u) => {
-      const y = u.id;
-      return !t[y] || !t[y].inputs.length || t[y].inputs.every((x) => !x.sourceNode);
-    });
-    c.length === 0 && l.length > 0 && c.push(l[0]);
-    const p = c.map((u) => ({ node: u, level: 0 }));
-    for (; p.length > 0; ) {
-      const { node: u, level: y } = p.shift();
-      !u || !u.id || a.has(u.id) || (a.add(u.id), o[u.id] = { level: y, order: 0 }, t[u.id] && t[u.id].outputs && t[u.id].outputs.forEach((x) => {
-        x && x.targetNode && x.targetNode.id && !a.has(x.targetNode.id) && p.push({ node: x.targetNode, level: y + 1 });
-      }));
-    }
+    const o = {}, l = i.filter((u) => u && u.id != null), _lv = {}, _busy = /* @__PURE__ */ new Set();
+    // Longest-path layering (L4): BFS shortest-path put cross-joined nodes in the
+    // wrong column. level(n) = 1 + max(level of inputs); back-edges (cycles) are
+    // ignored via the _busy guard. ponytail: recursion depth = longest chain, so a
+    // straight chain of ~8k+ nodes would overflow the stack — switch to an
+    // iterative topo order if that ever matters.
+    const _level = (u) => {
+      if (u == null || u.id == null) return -1;
+      if (_lv[u.id] != null) return _lv[u.id];
+      if (_busy.has(u.id)) return -1;
+      _busy.add(u.id);
+      let v = 0;
+      const y = t[u.id] && t[u.id].inputs;
+      if (y && y.length) for (const x of y) {
+        if (!x || !x.sourceNode) continue;
+        const s = _level(x.sourceNode);
+        s >= 0 && s + 1 > v && (v = s + 1);
+      }
+      return _busy.delete(u.id), _lv[u.id] = v, v;
+    };
     l.forEach((u) => {
-      u && u.id && !o[u.id] && (o[u.id] = { level: 0, order: 0 });
+      o[u.id] = { level: _level(u), order: 0 };
     });
     const d = {};
-    return Object.entries(o).forEach(([u, y]) => {
-      d[y.level] || (d[y.level] = []);
-      const x = l.find((k) => k && k.id === u);
-      x && d[y.level].push(x);
+    return l.forEach((u) => {
+      const y = o[u.id];
+      y && (d[y.level] || (d[y.level] = []), d[y.level].push(u));
     }), Object.entries(d).forEach(([u, y]) => {
       y && y.length > 0 && (y.sort((x, k) => {
         const N = x && x.pos && x.pos[1] ? x.pos[1] : 0, X = k && k.pos && k.pos[1] ? k.pos[1] : 0;
         return N - X;
       }), y.forEach((x, k) => {
-        x && x.id && o[x.id] && (o[x.id].order = k);
+        x && x.id != null && o[x.id] && (o[x.id].order = k);
       }));
     }), o;
   }
@@ -2361,8 +2390,10 @@ function D0() {
           const _snap = _hkSnapshot(A);
           positions.forEach((pos, idx) => {
             const node = A[idx];
-            if (pos && node) {
-              node.pos[0] = pos.x, node.pos[1] = pos.y, typeof node.x == "number" && (node.x = pos.x), typeof node.y == "number" && (node.y = pos.y);
+            // One NaN coordinate (e.g. a node with broken pos in the batch)
+            // must not poison the others — skip that node only (A2)
+            if (pos && node && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+              node.pos = [pos.x, pos.y], typeof node.x == "number" && (node.x = pos.x), typeof node.y == "number" && (node.y = pos.y);
             }
           });
           _hkPushUndo(_snap);
@@ -2379,18 +2410,7 @@ function D0() {
     if (i === "horizontal-flow") { x0(); return; }
     if (i === "vertical-flow") { C0(); return; }
     try {
-      const x = Math.max(...A.map((f) => {
-        const w = te.get(f);
-        if (w && w.width !== void 0) return w.width;
-        return _ns(f).width;
-      })), k = Math.min(...A.map((f) => {
-        const w = te.get(f);
-        if (w && w.width !== void 0) return w.width;
-        return _ns(f).width;
-      })), N = Math.max(...A.map((f) => {
-        const w = te.get(f);
-        return w && w.height !== void 0 ? w.height : _ns(f).height;
-      })), X = Math.min(...A.map((f) => _ns(f).height));
+      const x = Math.max(...A.map((f) => _ns(f).width)), k = Math.min(...A.map((f) => _ns(f).width)), N = Math.max(...A.map((f) => _ns(f).height)), X = Math.min(...A.map((f) => _ns(f).height));
       const _snap = _hkSnapshot(A);
       switch (i) {
         case "width-max":
@@ -2408,7 +2428,8 @@ function D0() {
               const L = T2.get(r) || r.computeSize;
               if (L) {
                 const Y = L.call(r);
-                r.size[1] = Math.max(X, Y[1]);
+                // NaN from a broken computeSize() must not poison the real size (B1)
+                r.size[1] = Number.isFinite(Y[1]) ? Math.max(X, Y[1]) : X;
               }
             }
           });
@@ -2422,7 +2443,10 @@ function D0() {
               const L = T2.get(r) || r.computeSize;
               if (L) {
                 const Y = L.call(r);
-                r.size[0] = Y[0], r.size[1] = Y[1];
+                // Third-party computeSize() may return negative/NaN/Infinity garbage —
+                // clamp, falling back to the node's own real size when unusable (A3/B1)
+                const w0 = Math.max(1, Y[0]), h0 = Math.max(1, Y[1]);
+                r.size[0] = Number.isFinite(w0) ? w0 : _ns(r).width, r.size[1] = Number.isFinite(h0) ? h0 : _ns(r).height;
               }
             }
           });
@@ -2452,12 +2476,12 @@ function D0() {
       }
       const p = Math.min(...c.map((s) => s.pos && (Array.isArray(s.pos) || s.pos.length !== void 0) ? s.pos[0] : s.position && (Array.isArray(s.position) || s.position.length !== void 0) ? s.position[0] : typeof s.x == "number" ? s.x : 0)), d = Math.min(...c.map((s) => s.pos && (Array.isArray(s.pos) || s.pos.length !== void 0) ? s.pos[1] : s.position && (Array.isArray(s.position) || s.position.length !== void 0) ? s.position[1] : typeof s.y == "number" ? s.y : 0)), u = p, y = d;
       c.forEach((s) => {
-        s.pos || (s.position && Array.isArray(s.position) ? s.pos = s.position : typeof s.x == "number" && typeof s.y == "number" ? s.pos = [s.x, s.y] : s.pos = [0, 0]), s._calculatedSize = s.size && Array.isArray(s.size) ? [s.size[0] || 150, s.size[1] || 100] : typeof s.width == "number" && typeof s.height == "number" ? [s.width, s.height] : [150, 100], Array.isArray(s.pos) || (s.pos = [0, 0]);
+        s.pos || (s.position && Array.isArray(s.position) ? s.pos = s.position : typeof s.x == "number" && typeof s.y == "number" ? s.pos = [s.x, s.y] : s.pos = [0, 0]), s._calculatedSize = s.size && _arrLike(s.size) ? [s.size[0] || 150, s.size[1] || 100] : typeof s.width == "number" && typeof s.height == "number" ? [s.width, s.height] : [150, 100], _arrLike(s.pos) || (s.pos = [0, 0]);
       });
       const x = q2(c), k = G2(c, x), gap = _alignGap, f = 0, w = {};
       c.forEach((s) => {
         var S;
-        if (s && s.id) {
+        if (s && s.id != null) {
           const O = ((S = k[s.id]) == null ? void 0 : S.level) ?? 0;
           w[O] || (w[O] = []), w[O].push(s);
         }
@@ -2467,7 +2491,7 @@ function D0() {
         const O = parseInt(s);
         if (S && S.length > 0) {
           S.sort((g, B) => {
-            const K = g && g.id && k[g.id] ? k[g.id].order : 0, V = B && B.id && k[B.id] ? k[B.id].order : 0;
+            const K = g && g.id != null && k[g.id] ? k[g.id].order : 0, V = B && B.id != null && k[B.id] ? k[B.id].order : 0;
             return K - V;
           });
           let G = isH ? u : y;
@@ -2481,11 +2505,11 @@ function D0() {
           let $ = isH ? y : u;
           S.forEach((g) => {
             if (g && g.pos && g._calculatedSize) {
-              if (isH) {
-                g.pos[0] = G, g.pos[1] = $, $ += g._calculatedSize[1] + gap;
-              } else {
-                g.pos[0] = $, g.pos[1] = G, $ += g._calculatedSize[0] + gap;
-              }
+            if (isH) {
+              g.pos = [G, $], $ += g._calculatedSize[1] + gap;
+            } else {
+              g.pos = [$, G], $ += g._calculatedSize[0] + gap;
+            }
               typeof g.x == "number" && (g.x = g.pos[0]), typeof g.y == "number" && (g.y = g.pos[1]);
             }
           });
@@ -2517,18 +2541,6 @@ function D0() {
     window.app.canvas.canvas.addEventListener("mouseup", () => {
       requestAnimationFrame($2);
     });
-    window.app.canvas.canvas.addEventListener("keydown", (e) => {
-      const _el = e.target;
-      if (_el && (_el.tagName === "INPUT" || _el.tagName === "TEXTAREA" || _el.isContentEditable)) return;
-      if (F2 && (e.ctrlKey || e.metaKey) && !e.altKey) {
-        const _k = e.key.toLowerCase();
-        if (_k === "z" && !e.shiftKey && _hkUndoStack.length > 0) {
-          e.preventDefault(), e.stopImmediatePropagation(), _hkUndo();
-        } else if ((_k === "y" || (_k === "z" && e.shiftKey)) && _hkRedoStack.length > 0) {
-          e.preventDefault(), e.stopImmediatePropagation(), _hkRedo();
-        }
-      }
-    }, !0);
     document.addEventListener("keydown", (t) => {
       (t.ctrlKey || t.metaKey) && requestAnimationFrame($2);
     });
@@ -2552,20 +2564,24 @@ function D0() {
       F2 && (i.preventDefault(), l0());
       return;
     }
-    if (F2 && (i.ctrlKey || i.metaKey) && !i.altKey) {
+    if (F2 && i.altKey && !i.ctrlKey && !i.metaKey) {
       const _el = i.target;
       if (_el && (_el.tagName === "INPUT" || _el.tagName === "TEXTAREA" || _el.isContentEditable)) return;
       const _k = i.key.toLowerCase();
-      if (_k === "z" && !i.shiftKey) {
-        if (_hkUndoStack.length > 0) i.preventDefault(), i.stopImmediatePropagation(), _hkUndo();
-        return;
-      }
-      if (_k === "y" || (_k === "z" && i.shiftKey)) {
-        if (_hkRedoStack.length > 0) i.preventDefault(), i.stopImmediatePropagation(), _hkRedo();
+      if (_k === "u") {
+        // Dedicated shortcut (R4): Ctrl+Z stays ComfyUI's own undo; Alt+U/Alt+Shift+U
+        // drive the alignment undo/redo while the panel is open. Not Alt+Z (NVIDIA
+        // overlay) or Alt+R (AMD overlay).
+        if (i.shiftKey) {
+          if (_hkRedoStack.length > 0) i.preventDefault(), _hkRedo();
+        } else if (_hkUndoStack.length > 0) i.preventDefault(), _hkUndo();
         return;
       }
     }
     if (i.altKey && !i.ctrlKey && !i.metaKey && !i.shiftKey && (i.key === "v" || i.key === "V")) {
+      if (i.repeat) return;
+      const _el = i.target;
+      if (_el && (_el.tagName === "INPUT" || _el.tagName === "TEXTAREA" || _el.isContentEditable)) return;
       i.preventDefault(), pe();
     }
   }
@@ -2580,5 +2596,11 @@ const e2 = {
 
 // Drag-to-snap alignment guides — self-contained module, loaded asynchronously
 // so any failure inside snap.js can never block the main Node Alignment panel.
-import("./snap.js").catch(() => console.warn("[Node Alignment] snap module failed to load"));
+import("./snap.js").then(() => {
+  // The panel (and its snap-distance input) is built before snap.js finishes
+  // loading, so the input may still show the default 8 — backfill the real
+  // saved value once window.HkSnap exists (skip if the user is already editing)
+  const _si = document.getElementById("hk-snap-dist-input");
+  if (_si && window.HkSnap && document.activeElement !== _si) _si.value = window.HkSnap.getSnapDist();
+}).catch(() => console.warn("[Node Alignment] snap module failed to load"));
 import("./group.js").catch(() => console.warn("[Node Alignment] group module failed to load"));

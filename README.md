@@ -198,8 +198,8 @@ Button enabled/disabled states sync with canvas node selection in real time.
 | **Alt+S** | Toggle drag-to-snap alignment guides |
 | **Escape** | Close main panel / align popup |
 | **Enter** (in hex input) | Save custom color |
-| **Ctrl/Cmd + Z** | Undo alignment / size operation (independent stack, panel open only) |
-| **Ctrl/Cmd + Y** or **Ctrl/Cmd + Shift + Z** | Redo alignment / size operation |
+| **Alt+U** | Undo alignment / size operation (independent stack, panel open only) |
+| **Alt+Shift+U** | Redo alignment / size operation |
 | **Ctrl/Cmd + Z** (no alignment undo available) | Falls through to ComfyUI native undo |
 | **Shift** (while dragging) | Temporarily bypass snap alignment |
 

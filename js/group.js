@@ -114,6 +114,9 @@ function _manualResizeTo(group, nodes, padding) {
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const n of nodes) {
+    // Skip malformed nodes — a missing pos would throw, and ±1e308 coords
+    // overflow the bounds to Infinity which would poison the group (B5)
+    if (!n || !n.pos || !Number.isFinite(n.pos[0]) || !Number.isFinite(n.pos[1])) continue;
     // Node bounding rect: title bar starts ABOVE pos[1]
     const nx = n.pos[0];
     const ny = n.pos[1] - nodeTitleH;
@@ -133,6 +136,8 @@ function _manualResizeTo(group, nodes, padding) {
   const gy = (minY - padding) - titleH;
   const gw = (maxX - minX) + padding * 2;
   const gh = (maxY - minY) + padding * 2 + titleH;
+  // Never write Infinity bounds onto the group (B5)
+  if (![gx, gy, gw, gh].every(Number.isFinite)) return;
 
   // Set position
   if (group._pos && group._pos.length >= 2) {
@@ -316,6 +321,8 @@ patchGroupFont();
  */
 function setGroupFontSize(size) {
   const n = Math.max(8, Math.min(300, Math.round(size)));
+  // NaN/undefined input must not poison g.font_size through the public API (A6)
+  if (!Number.isFinite(n)) return;
   const graph = window.app && window.app.graph;
   if (!graph || !Array.isArray(graph._groups)) return;
 
