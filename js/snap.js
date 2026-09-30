@@ -324,9 +324,9 @@ function onWindowPointerDown(e) {
   if (isOverHKUI(e)) return;
   const c = app.canvas;
   if (!c?.graph?._nodes) return;
-  // Snapshot node sizes for resize guard
+  // Snapshot node sizes for resize guard (skip malformed nodes — A4)
   const sizes = new Map();
-  for (const n of c.graph._nodes) sizes.set(n.id, [n.size[0], n.size[1]]);
+  for (const n of c.graph._nodes) { if (n && n.pos && n.size) sizes.set(n.id, [n.size[0], n.size[1]]); }
   state._gestureSizes = sizes;
   // Baseline group rects
   const grects = new Map();
@@ -335,6 +335,7 @@ function onWindowPointerDown(e) {
 }
 
 function onWindowPointerMove(e) {
+  try {
   if (!state.enabled) { resetDrag(); return; }
   if (e.shiftKey) { resetDrag(); return; }       // Shift bypasses
   if (!(e.buttons & 1)) { resetDrag(); return; }  // left button only
@@ -350,6 +351,9 @@ function onWindowPointerMove(e) {
   if (c.dragging_canvas) { resetDrag(); return; }
 
   // ── Group drag takes precedence ──
+  // If the group this drag session tracked got deleted mid-gesture (Delete /
+  // Ctrl+Z), drop the stale session instead of dragging a ghost rect (A9)
+  if (state.groupDrag && !graphGroups(c).includes(state.groupDrag.ref)) state.groupDrag = null;
   const draggedGroup = findDraggedGroup(c) || state.groupDrag?.ref || null;
   refreshGroupCache(c);
   if (draggedGroup) {
@@ -358,7 +362,10 @@ function onWindowPointerMove(e) {
   }
 
   // ── Node drag ──
-  // Detect dragged node by position change (legacy) or by selection (Vue)
+  // Detect dragged node: active session → litegraph's actually-dragged node →
+  // real position change → selection (A10: selected_nodes[0] is key-order, not
+  // the node under the cursor — dragging a pinned selection mate must not
+  // ghost-move an innocent selected node)
   let draggedNode = null;
   if (state.dragInfo?.nodeId != null) {
     const id = state.dragInfo.nodeId;
@@ -368,18 +375,32 @@ function onWindowPointerMove(e) {
     if (stillSelected) draggedNode = node;
     else state.dragInfo = null;
   }
+  // Prefer whatever litegraph itself reports as dragged (classic builds)
   if (!draggedNode) {
-    const sel = c.selected_nodes;
-    const keys = sel ? Object.keys(sel) : [];
-    if (keys.length >= 1) draggedNode = sel[keys[0]];
+    const _nd = c.node_dragged || c.dragging_node || null;
+    if (_nd && _nd.pos && !_nd.flags?.pinned) draggedNode = _nd;
   }
-  // Legacy change-detection fallback
+  // Real position change beats selection guessing: dragging a pinned node
+  // moves nothing at all, and the moved node may not be selected_nodes[0]
   if (!draggedNode && state._prevNodeStates && c.graph?._nodes) {
     for (const n of c.graph._nodes) {
       const p = state._prevNodeStates.get(n.id);
       if (p && (p.x !== n.pos[0] || p.y !== n.pos[1] || p.w !== n.size[0] || p.h !== n.size[1])) {
         draggedNode = n; break;
       }
+    }
+  }
+  if (!draggedNode) {
+    const sel = c.selected_nodes;
+    const keys = sel ? Object.keys(sel) : [];
+    if (keys.length >= 1) draggedNode = sel[keys[0]];
+    // B6: reaching this fallback means litegraph reported no dragged node AND
+    // nothing actually moved. If the selection also contains a pinned node,
+    // the user is most likely grabbing that pinned node (nothing can move) —
+    // never ghost-drag the smallest-id ordinary node instead.
+    if (draggedNode && !draggedNode.flags?.pinned) {
+      const _selVals = sel ? Object.values(sel) : [];
+      if (_selVals.some((s) => s && s.flags?.pinned)) { resetDrag(); return; }
     }
   }
 
@@ -396,6 +417,16 @@ function onWindowPointerMove(e) {
     return;
   }
   if (draggedNode.flags?.pinned) { resetDrag(); return; }
+
+  // Resize guard: pointerdown snapshotted node sizes (_gestureSizes). If the
+  // node's size changed since then this gesture is a resize, not a move —
+  // the desired position below would be a ghost rect drifting away from the
+  // real node, so bail (same guard the group path applies in handleGroupDrag).
+  const _gSize = state._gestureSizes && draggedNode.size ? state._gestureSizes.get(draggedNode.id) : null;
+  if (_gSize && (Math.abs(_gSize[0] - draggedNode.size[0]) > 0.01 || Math.abs(_gSize[1] - draggedNode.size[1]) > 0.01)) {
+    resetDrag();
+    return;
+  }
 
   // Multi-select detection
   let multiNodes = null;
@@ -549,6 +580,12 @@ function onWindowPointerMove(e) {
     pushGuide("Y", bestY.target, range);
   }
   c.setDirty?.(true, true);
+  } catch (err) {
+    // One malformed node (missing pos/size while loading, buggy plugin, …)
+    // must not kill the whole drag-snap loop or spam one exception per
+    // mousemove — abort this gesture and skip the tick (A4)
+    resetDrag();
+  }
 }
 
 // ── Draw hook ────────────────────────────────────────────────────────────────
@@ -683,6 +720,7 @@ function toggleEnabled() {
 // ── Keyboard shortcut: Alt+S ─────────────────────────────────────────────────
 
 document.addEventListener("keydown", (e) => {
+  if (e.repeat) return;
   if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === "s" || e.key === "S")) {
     const el = e.target;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;

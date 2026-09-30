@@ -34,3 +34,7 @@ comfyui-palette-v2.json
 
 # Bundles
 *.zip
+
+# Agent workspace (test scripts, isolated instance data, workflow drafts)
+.zcode/
+.mimosa/
