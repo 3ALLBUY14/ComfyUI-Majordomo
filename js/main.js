@@ -380,7 +380,12 @@ function D0() {
   // Array.isArray 对它们返回 false；判定容器必须走"类数组"而不是 Array.isArray，
   // 否则兜底逻辑会把真实位置/尺寸当成异常数据重置掉（撤销快照存 [0,0] 的根因）。
   const _arrLike = (v) => !!v && typeof v.length == "number";
-  function _ns(n) { let w = 150, h = 100; if (n.size && _arrLike(n.size)) { n.size[0] > 0 && (w = n.size[0]); n.size[1] > 0 && (h = n.size[1]); } else { typeof n.width == "number" && n.width > 0 && (w = n.width); typeof n.height == "number" && n.height > 0 && (h = n.height); if (n.properties) { typeof n.properties.width == "number" && n.properties.width > 0 && (w = n.properties.width); typeof n.properties.height == "number" && n.properties.height > 0 && (h = n.properties.height); } } return { width: w, height: h }; }
+  function _ns(n) { let w = 150, h = 100; if (n.size && _arrLike(n.size)) { Number.isFinite(n.size[0]) && n.size[0] > 0 && (w = n.size[0]); Number.isFinite(n.size[1]) && n.size[1] > 0 && (h = n.size[1]); } else { typeof n.width == "number" && Number.isFinite(n.width) && n.width > 0 && (w = n.width); typeof n.height == "number" && Number.isFinite(n.height) && n.height > 0 && (h = n.height); if (n.properties) { typeof n.properties.width == "number" && Number.isFinite(n.properties.width) && n.properties.width > 0 && (w = n.properties.width); typeof n.properties.height == "number" && Number.isFinite(n.properties.height) && n.properties.height > 0 && (h = n.properties.height); } } return { width: w, height: h }; }
+  // Math.max(...arr) 展开的实参超过 V8 上限（约 12 万）直接抛 RangeError，被外层
+  // catch 吞成一条 toast —— 大图全选的对齐/预览整体静默失效。极值一律走循环（A4）。
+  // 注：数组元素经上游过滤/兜底均为有限数，循环里 NaN 会被跳过（比 Math.max 的 NaN 传染更稳）。
+  function _mx(a) { let m = -Infinity; for (let i = 0; i < a.length; i++) a[i] > m && (m = a[i]); return m; }
+  function _mn(a) { let m = Infinity; for (let i = 0; i < a.length; i++) a[i] < m && (m = a[i]); return m; }
   let O2 = null, ge = !1;
   const R2 = 48, Ze = 24;
   function be() {
@@ -834,6 +839,9 @@ function D0() {
         _colorOpt = _buildOpt(f2[0]);
       }
       if (_colorOpt && A.length > 0) {
+        // Colour-undo baseline BEFORE repainting, same as oe()/paste do —
+        // otherwise this repaint has no ↶ entry (F6)
+        _cPushUndo([...A], [...L2]);
         const _graphs = /* @__PURE__ */ new Set();
         A.forEach((u) => { u != null && u.graph && _graphs.add(u.graph); });
         _graphs.forEach((u) => { var y; return (y = u == null ? void 0 : u.beforeChange) == null ? void 0 : y.call(u); });
@@ -942,7 +950,7 @@ function D0() {
     cv.addEventListener("pointerup", (e) => {
       if (dragging) { const hex = _hsvToHex(curH, curS, curV); onCommit ? onCommit(hex) : null; dragging = null; }
     });
-    cv.addEventListener("pointercancel", () => { dragging = null; });
+    cv.addEventListener("pointercancel", () => { dragging = null; _closeSvPicker(); });
     pop.appendChild(cv);
     // Position
     const ar = anchorEl.getBoundingClientRect();
@@ -964,6 +972,11 @@ function D0() {
   }
   function _svEsc(e) { if (e.key === "Escape") _closeSvPicker(); }
   function _closeSvPicker() {
+    // Any close is a CANCEL for the in-flight preview: restore the pre-preview
+    // colors first — same _2() the swatch mouseleave / hex blur paths call —
+    // otherwise the node stays painted and e2.active dangles, poisoning the
+    // next preview's baseline (F5). No-op when no preview is active.
+    _2();
     if (_svPicker) { _svPicker.remove(); _svPicker = null; }
     document.removeEventListener("pointerdown", _svOutside, !0);
     document.removeEventListener("keydown", _svEsc, !0);
@@ -1920,15 +1933,22 @@ function D0() {
     }), J2 = [];
   }
   let _alignGap = 30;
-  try { const _g = parseInt(localStorage.getItem("hk-align-gap")); !isNaN(_g) && _g >= 0 && (_alignGap = _g); } catch {}
+  // 读侧与写侧（UI 验证 0-200）对称：只验 >=0 会放行 localStorage 里的超大值，
+  // 流式排列把节点摊到几十亿像素外且只能手改输入框恢复（A5）
+  try { const _g = parseInt(localStorage.getItem("hk-align-gap")); !isNaN(_g) && _g >= 0 && _g <= 200 && (_alignGap = _g); } catch {}
   let _hkUndoBtn = null, _hkRedoBtn = null;
   let _hkUndoStack = [], _hkRedoStack = [];
   const _HK_MAX_UNDO = 50;
   function _hkSnapshot(nodes) {
+    // Element-level finiteness, not just truthiness: a malformed node (pos=[]
+    // / size=[] from a broken workflow or plugin) would snapshot
+    // [undefined, undefined] and Alt+U writes them back into the real node
+    // (renders NaN, serializes to null) — clamp each element to 0 instead (A3)
+    const fin = (v) => (Number.isFinite(v) ? v : 0);
     return nodes.filter(n => n && n.pos).map(n => ({
       node: n,
-      pos: [n.pos[0], n.pos[1]],
-      size: n.size ? [n.size[0], n.size[1]] : null
+      pos: [fin(n.pos[0]), fin(n.pos[1])],
+      size: n.size ? [fin(n.size[0]), fin(n.size[1])] : null
     }));
   }
   function _hkRestore(snapshot) {
@@ -1943,8 +1963,9 @@ function D0() {
         if (typeof s.node.x == "number") s.node.x = s.pos[0];
         if (typeof s.node.y == "number") s.node.y = s.pos[1];
         if (s.size) {
-          if (!s.node.size) s.node.size = [s.size[0], s.size[1]];
-          else { s.node.size[0] = s.size[0]; s.node.size[1] = s.size[1]; }
+          // size 与 pos 同为 Float64Array 视图：逐元素写只改视图缓存会被前端打回，
+          // 必须整组赋值走 setter（旧前端普通属性赋值同样兼容）——与上面 pos 同改（F1）
+          s.node.size = [s.size[0], s.size[1]];
         }
       }
     });
@@ -2037,7 +2058,7 @@ function D0() {
   }
   function g0(i, t) {
     if (t.length < 2) return [];
-    const o = [], a = Math.min(...t.map((d) => d.pos[0])), l = Math.max(...t.map((d) => d.pos[0] + _ns(d).width)), c = Math.min(...t.map((d) => d.pos[1])), p = Math.max(...t.map((d) => d.pos[1] + _ns(d).height));
+    const o = [], a = _mn(t.map((d) => d.pos[0])), l = _mx(t.map((d) => d.pos[0] + _ns(d).width)), c = _mn(t.map((d) => d.pos[1])), p = _mx(t.map((d) => d.pos[1] + _ns(d).height));
     switch (i) {
       case "left":
         const d = [...t].sort((e, n) => e.pos[1] - n.pos[1]);
@@ -2100,7 +2121,7 @@ function D0() {
         });
         break;
       case "height-center":
-        const O = Math.min(...t.map((e) => e.pos[0])), J = Math.max(...t.map((e) => e.pos[0] + _ns(e).width)), i2 = (O + J) / 2, G = [...t].sort((e, n) => e.pos[1] - n.pos[1]);
+        const O = _mn(t.map((e) => e.pos[0])), J = _mx(t.map((e) => e.pos[0] + _ns(e).width)), i2 = (O + J) / 2, G = [...t].sort((e, n) => e.pos[1] - n.pos[1]);
         let $ = G[0].pos[1];
         const g = /* @__PURE__ */ new Map();
         G.forEach((e) => {
@@ -2115,7 +2136,7 @@ function D0() {
         });
         break;
       case "width-center":
-        const B = Math.min(...t.map((e) => e.pos[1])), K = Math.max(...t.map((e) => e.pos[1] + _ns(e).height)), V = (B + K) / 2, n2 = [...t].sort((e, n) => e.pos[0] - n.pos[0]);
+        const B = _mn(t.map((e) => e.pos[1])), K = _mx(t.map((e) => e.pos[1] + _ns(e).height)), V = (B + K) / 2, n2 = [...t].sort((e, n) => e.pos[0] - n.pos[0]);
         let Z = n2[0].pos[0];
         const a2 = /* @__PURE__ */ new Map();
         n2.forEach((e) => {
@@ -2136,7 +2157,7 @@ function D0() {
           return !!n && !!h;
         });
         if (r2.length < 2) break;
-        const h2 = Math.min(...r2.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[0] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[0] : typeof e.x == "number" ? e.x : 0)), r = Math.min(...r2.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[1] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[1] : typeof e.y == "number" ? e.y : 0)), L = r2.map((e) => ({
+        const h2 = _mn(r2.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[0] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[0] : typeof e.x == "number" ? e.x : 0)), r = _mn(r2.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[1] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[1] : typeof e.y == "number" ? e.y : 0)), L = r2.map((e) => ({
           ...e,
           pos: e.pos ? [...e.pos] : [e.x || 0, e.y || 0],
           _calculatedSize: e.size && _arrLike(e.size) ? [e.size[0], e.size[1]] : [e.width || 150, e.height || 100]
@@ -2159,7 +2180,7 @@ function D0() {
             let E = h2;
             if (h > 0)
               for (let b = 0; b < h; b++) {
-                const D = P[b] || [], s2 = Math.max(...D.map(
+                const D = P[b] || [], s2 = _mx(D.map(
                   (I) => I && I._calculatedSize && I._calculatedSize[0] ? I._calculatedSize[0] : 150
                 ));
                 E += s2 + m + z;
@@ -2186,7 +2207,7 @@ function D0() {
           return !!n && !!h;
         });
         if (R.length < 2) break;
-        const Q = Math.min(...R.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[0] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[0] : typeof e.x == "number" ? e.x : 0)), l2 = Math.min(...R.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[1] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[1] : typeof e.y == "number" ? e.y : 0)), u2 = R.map((e) => ({
+        const Q = _mn(R.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[0] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[0] : typeof e.x == "number" ? e.x : 0)), l2 = _mn(R.map((e) => e.pos && (Array.isArray(e.pos) || e.pos.length !== void 0) ? e.pos[1] : e.position && (Array.isArray(e.position) || e.position.length !== void 0) ? e.position[1] : typeof e.y == "number" ? e.y : 0)), u2 = R.map((e) => ({
           ...e,
           pos: e.pos ? [...e.pos] : [e.x || 0, e.y || 0],
           _calculatedSize: e.size && _arrLike(e.size) ? [e.size[0], e.size[1]] : [e.width || 150, e.height || 100]
@@ -2209,7 +2230,7 @@ function D0() {
             let E = l2;
             if (h > 0)
               for (let b = 0; b < h; b++) {
-                const D = t2[b] || [], s2 = Math.max(...D.map(
+                const D = t2[b] || [], s2 = _mx(D.map(
                   (I) => I && I._calculatedSize && I._calculatedSize[1] ? I._calculatedSize[1] : 100
                 ));
                 E += s2 + V2 + B2;
@@ -2239,9 +2260,9 @@ function D0() {
           let n = 150, h = 100, _sz = _ns(e); n = _sz.width, h = _sz.height;
           let E = n, q = h;
           if (i === "width-max" || i === "size-max")
-            E = Math.max(...t.map((b) => _ns(b).width));
+            E = _mx(t.map((b) => _ns(b).width));
           else if (i === "width-min")
-            E = Math.min(...t.map((b) => _ns(b).width));
+            E = _mn(t.map((b) => _ns(b).width));
           else if (i === "size-min") {
             const b = T2.get(e) || e.computeSize;
             if (b)
@@ -2253,9 +2274,9 @@ function D0() {
               }
           }
           if (i === "height-max" || i === "size-max")
-            q = Math.max(...t.map((b) => _ns(b).height));
+            q = _mx(t.map((b) => _ns(b).height));
           else if (i === "height-min") {
-            const b = Math.min(...t.map((I) => _ns(I).height)), D = T2.get(e) || e.computeSize;
+            const b = _mn(t.map((I) => _ns(I).height)), D = T2.get(e) || e.computeSize;
             let s2 = null;
             if (D)
               try {
@@ -2385,11 +2406,15 @@ function D0() {
     const _posAligns = ["left", "right", "top", "bottom", "height-center", "width-center"];
     if (_posAligns.includes(i)) {
       try {
-        const positions = g0(i, A);
+        // 坐标非有限的节点（pos=[]、NaN/Infinity——坏工作流/坏插件）会让 g0 的
+        // Math.min 基线传染成 NaN，整批对齐在写回守卫处静默失效：入口剔除。
+        // g0 输出与传入列表按索引对应，写回与快照都用同一 valid 列表（A3）
+        const valid = A.filter((n) => n && n.pos && Number.isFinite(n.pos[0]) && Number.isFinite(n.pos[1]));
+        const positions = g0(i, valid);
         if (positions && positions.length > 0) {
-          const _snap = _hkSnapshot(A);
+          const _snap = _hkSnapshot(valid);
           positions.forEach((pos, idx) => {
-            const node = A[idx];
+            const node = valid[idx];
             // One NaN coordinate (e.g. a node with broken pos in the batch)
             // must not poison the others — skip that node only (A2)
             if (pos && node && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
@@ -2410,44 +2435,50 @@ function D0() {
     if (i === "horizontal-flow") { x0(); return; }
     if (i === "vertical-flow") { C0(); return; }
     try {
-      const x = Math.max(...A.map((f) => _ns(f).width)), k = Math.min(...A.map((f) => _ns(f).width)), N = Math.max(...A.map((f) => _ns(f).height)), X = Math.min(...A.map((f) => _ns(f).height));
+      const x = _mx(A.map((f) => _ns(f).width)), k = _mn(A.map((f) => _ns(f).width)), N = _mx(A.map((f) => _ns(f).height)), X = _mn(A.map((f) => _ns(f).height));
       const _snap = _hkSnapshot(A);
       switch (i) {
+        // size 与 pos 同为 Float64Array 视图：逐元素写会被前端打回，全部整组赋值（F1）
         case "width-max":
-          A.forEach((r) => { r.size && (r.size[0] = x); });
+          A.forEach((r) => { r.size && (r.size = [x, r.size[1]]); });
           break;
         case "width-min":
-          A.forEach((r) => { r.size && (r.size[0] = k); });
+          A.forEach((r) => { r.size && (r.size = [k, r.size[1]]); });
           break;
         case "height-max":
-          A.forEach((r) => { r.size && (r.size[1] = N); });
+          A.forEach((r) => { r.size && (r.size = [r.size[0], N]); });
           break;
         case "height-min":
           A.forEach((r) => {
             if (r.size) {
               const L = T2.get(r) || r.computeSize;
-              if (L) {
-                const Y = L.call(r);
-                // NaN from a broken computeSize() must not poison the real size (B1)
-                r.size[1] = Number.isFinite(Y[1]) ? Math.max(X, Y[1]) : X;
-              }
+              let q2h = X;
+              if (L)
+                try {
+                  // Third-party computeSize() may throw or return garbage — guard
+                  // like g0 does, falling back to the batch min real height (F4)
+                  const Y = L.call(r);
+                  if (Y && Y.length >= 2 && Number.isFinite(Y[1])) q2h = Math.max(X, Y[1]);
+                } catch {}
+              r.size = [r.size[0], q2h];
             }
           });
           break;
         case "size-max":
-          A.forEach((r) => { r.size && (r.size[0] = x, r.size[1] = N); });
+          A.forEach((r) => { r.size && (r.size = [x, N]); });
           break;
         case "size-min":
           A.forEach((r) => {
             if (r.size) {
               const L = T2.get(r) || r.computeSize;
-              if (L) {
-                const Y = L.call(r);
-                // Third-party computeSize() may return negative/NaN/Infinity garbage —
-                // clamp, falling back to the node's own real size when unusable (A3/B1)
-                const w0 = Math.max(1, Y[0]), h0 = Math.max(1, Y[1]);
-                r.size[0] = Number.isFinite(w0) ? w0 : _ns(r).width, r.size[1] = Number.isFinite(h0) ? h0 : _ns(r).height;
-              }
+              if (L)
+                try {
+                  // Same guard as g0: throw / null / non-finite returns leave the
+                  // node's size untouched instead of killing the whole loop (F4)
+                  const Y = L.call(r);
+                  if (Y && Y.length >= 2 && Number.isFinite(Y[0]) && Number.isFinite(Y[1]))
+                    r.size = [Math.max(1, Y[0]), Math.max(1, Y[1])];
+                } catch {}
             }
           });
           break;
@@ -2468,15 +2499,19 @@ function D0() {
       const c = A.filter((s) => {
         if (!s) return !1;
         const S = s.pos || s.position || typeof s.x == "number" && typeof s.y == "number", O = s.size || s.width || s.height || typeof s.width == "number" && typeof s.height == "number";
-        return !!S && !!O;
+        // 坐标必须是有限数值：一个 NaN/Infinity/undefined 元素（坏节点、pos=[]）
+        // 会经下面 Math.min 传染全批并整组写回 —— 比照 y2 路径的单节点跳过防护（F3）
+        const px = s.pos ? s.pos[0] : s.position ? s.position[0] : s.x;
+        const py = s.pos ? s.pos[1] : s.position ? s.position[1] : s.y;
+        return !!S && !!O && Number.isFinite(px) && Number.isFinite(py);
       });
       if (c.length < 2) {
         k2(_("notEnoughNodes").replace("{valid}", c.length).replace("{total}", A.length), "warning");
         return;
       }
-      const p = Math.min(...c.map((s) => s.pos && (Array.isArray(s.pos) || s.pos.length !== void 0) ? s.pos[0] : s.position && (Array.isArray(s.position) || s.position.length !== void 0) ? s.position[0] : typeof s.x == "number" ? s.x : 0)), d = Math.min(...c.map((s) => s.pos && (Array.isArray(s.pos) || s.pos.length !== void 0) ? s.pos[1] : s.position && (Array.isArray(s.position) || s.position.length !== void 0) ? s.position[1] : typeof s.y == "number" ? s.y : 0)), u = p, y = d;
+      const p = _mn(c.map((s) => s.pos && (Array.isArray(s.pos) || s.pos.length !== void 0) ? s.pos[0] : s.position && (Array.isArray(s.position) || s.position.length !== void 0) ? s.position[0] : typeof s.x == "number" ? s.x : 0)), d = _mn(c.map((s) => s.pos && (Array.isArray(s.pos) || s.pos.length !== void 0) ? s.pos[1] : s.position && (Array.isArray(s.position) || s.position.length !== void 0) ? s.position[1] : typeof s.y == "number" ? s.y : 0)), u = p, y = d;
       c.forEach((s) => {
-        s.pos || (s.position && Array.isArray(s.position) ? s.pos = s.position : typeof s.x == "number" && typeof s.y == "number" ? s.pos = [s.x, s.y] : s.pos = [0, 0]), s._calculatedSize = s.size && _arrLike(s.size) ? [s.size[0] || 150, s.size[1] || 100] : typeof s.width == "number" && typeof s.height == "number" ? [s.width, s.height] : [150, 100], _arrLike(s.pos) || (s.pos = [0, 0]);
+        s.pos || (s.position && Array.isArray(s.position) ? s.pos = s.position : typeof s.x == "number" && typeof s.y == "number" ? s.pos = [s.x, s.y] : s.pos = [0, 0]), s._calculatedSize = (_sz2 => [_sz2.width, _sz2.height])(_ns(s)), _arrLike(s.pos) || (s.pos = [0, 0]);
       });
       const x = q2(c), k = G2(c, x), gap = _alignGap, f = 0, w = {};
       c.forEach((s) => {
@@ -2497,7 +2532,7 @@ function D0() {
           let G = isH ? u : y;
           if (O > 0)
             for (let g = 0; g < O; g++) {
-              const B = w[g] || [], K = Math.max(...B.map(
+              const B = w[g] || [], K = _mx(B.map(
                 (V) => V && V._calculatedSize && V._calculatedSize[isH ? 0 : 1] ? V._calculatedSize[isH ? 0 : 1] : (isH ? 150 : 100)
               ));
               G += K + gap + f;

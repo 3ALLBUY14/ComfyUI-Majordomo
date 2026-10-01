@@ -8,14 +8,31 @@ import { dirname, join } from "node:path";
 
 const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "js", "main.js"), "utf8");
 
+// 切片时跳过字符串/模板串/行注释/块注释，否则函数体内出现的 "{"/"}" 字面量
+// 会让花括号配对多切或少切（少切 → new Function 语法错误而响亮误报；多切 → 把
+// 后续代码卷进测试体）。ponytail: 正则字面量与嵌套模板串仍不识别——被测函数
+// （q2/b0/m0/G2）体内没有这两样；真要用时改 acorn 解析。
 function extractFn(name) {
   const start = src.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `找不到函数 ${name}`);
   const open = src.indexOf("{", start);
-  let depth = 0, end = -1;
+  let depth = 0, end = -1, inStr = null, esc = false;
   for (let i = open; i < src.length; i++) {
-    if (src[i] === "{") depth++;
-    else if (src[i] === "}" && --depth === 0) { end = i; break; }
+    const ch = src[i];
+    if (esc) { esc = false; continue; }
+    if (inStr) {
+      if (ch === "\\") esc = true;
+      else if (ch === inStr) inStr = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === "`") { inStr = ch; continue; }
+    if (ch === "/") {
+      if (src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") i++; continue; }
+      if (src[i + 1] === "*") { i += 2; while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) i++; continue; }
+      continue;
+    }
+    if (ch === "{") depth++;
+    else if (ch === "}" && --depth === 0) { end = i; break; }
   }
   assert.ok(end > 0, `函数 ${name} 花括号配对失败`);
   return src.slice(start, end + 1);
