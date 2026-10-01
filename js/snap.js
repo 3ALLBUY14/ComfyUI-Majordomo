@@ -194,6 +194,49 @@ function groupContainedNodes(c, g, gRect) {
   return out;
 }
 
+// The item set a native group drag moves (frontend getAllNestedItems): the
+// group's children — nodes, link reroutes, nested groups, recursively — minus
+// pinned items. The snap correction must cover the SAME set, otherwise
+// reroutes / nested groups drift off the group rect by the snap delta and
+// pinned members get yanked on snap ticks only (F2).
+function groupDragItems(c, g, gRect) {
+  const isPinned = (it) => !!(it?.pinned || it?.flags?.pinned);
+  const iterable = (v) => v != null && typeof v[Symbol.iterator] === "function";
+  const kids = g?.children;
+  if (iterable(kids)) {
+    const out = [], seen = new Set();
+    const walk = (item) => {
+      if (!item || seen.has(item) || isPinned(item)) return;
+      seen.add(item);
+      out.push(item);
+      if (iterable(item.children)) for (const ch of item.children) walk(ch);
+    };
+    for (const ch of kids) walk(ch);
+    if (out.length) return out;
+  }
+  // Classic litegraph fallback: _nodes / geometric containment as before,
+  // plus graph-level reroutes and nested groups geometrically inside the rect
+  const out = groupContainedNodes(c, g, gRect).filter((n) => !isPinned(n));
+  const inside = (x, y) =>
+    x >= gRect.x && x <= gRect.x + gRect.w && y >= gRect.y && y <= gRect.y + gRect.h;
+  const rrs = c?.graph?.reroutes;
+  if (Array.isArray(rrs))
+    for (const r of rrs)
+      if (r && !isPinned(r) && arrLike(r.pos, 2) && inside(r.pos[0], r.pos[1])) out.push(r);
+  for (const sg of graphGroups(c)) {
+    if (sg === g) continue;
+    const sr = groupRect(sg);
+    // Fully-contained only: a merely OVERLAPPING sibling group (often the very
+    // snap target this drag is about to align with) is not a nested child —
+    // centre-point tests would swallow it into the member set and kill the snap
+    if (sr && !isPinned(sg) &&
+        sr.x >= gRect.x && sr.y >= gRect.y &&
+        sr.x + sr.w <= gRect.x + gRect.w && sr.y + sr.h <= gRect.y + gRect.h)
+      out.push(sg);
+  }
+  return out;
+}
+
 function handleGroupDrag(c, group, e) {
   const scale = c.ds?.scale || 1;
   const snapGraph = state.snapDistPx / scale;
@@ -208,13 +251,17 @@ function handleGroupDrag(c, group, e) {
 
   // Init session
   if (!state.groupDrag || state.groupDrag.ref !== group) {
-    const contained = groupContainedNodes(c, group, gRect).map((n) => ({
-      node: n, off: [n.pos[0] - gRect.x, n.pos[1] - gRect.y],
-    }));
+    const contained = groupDragItems(c, group, gRect).map((item) => {
+      // Origin via groupRect: nested groups carry _pos/_bounding, not plain pos
+      const o = groupRect(item) || (arrLike(item?.pos, 2) ? { x: item.pos[0], y: item.pos[1] } : null);
+      if (!o) return null;
+      return { item, off: [o.x - gRect.x, o.y - gRect.y],
+               isGroup: item._pos != null || item._bounding != null };
+    }).filter(Boolean);
     state.groupDrag = {
       ref: group, gx0: gRect.x, gy0: gRect.y, w: gRect.w, h: gRect.h,
       cursorX: e.clientX, cursorY: e.clientY,
-      contained, containedSet: new Set(contained.map((cn) => cn.node)),
+      contained, containedSet: new Set(contained.map((cn) => cn.item)),
       stickyX: null, stickyY: null,
     };
     return;
@@ -240,7 +287,7 @@ function handleGroupDrag(c, group, e) {
   let bestX = null, bestY = null, bestXRect = null, bestYRect = null;
   for (const t of targets) {
     if (t.ref === group) continue;
-    if (t.kind === "node" && di.containedSet.has(t.ref)) continue;
+    if (di.containedSet.has(t.ref)) continue;   // any dragged member: node, nested group, …
     if (t.kind === "node" && groupedNodes.has(t.ref)) continue;
     const oRect = t.rect;
     const dxc = Math.max(0, Math.max(oRect.x - (movingRect.x + movingRect.w), movingRect.x - (oRect.x + oRect.w)));
@@ -261,10 +308,15 @@ function handleGroupDrag(c, group, e) {
 
   setGroupPos(group, fx, fy);
   for (const cn of di.contained) {
-    if (snapActive) {
-      cn.node.pos[0] = fx + cn.off[0];
-      cn.node.pos[1] = fy + cn.off[1];
-      requestAnimationFrame(() => { cn.node.pos = [fx + cn.off[0], fy + cn.off[1]]; });
+    if (!snapActive) continue;
+    const nx = fx + cn.off[0], ny = fy + cn.off[1];
+    if (cn.isGroup) {
+      setGroupPos(cn.item, nx, ny);
+    } else {
+      // Element writes + rAF whole-array fallback (frontend view revert) stay
+      cn.item.pos[0] = nx;
+      cn.item.pos[1] = ny;
+      requestAnimationFrame(() => { cn.item.pos = [nx, ny]; });
     }
   }
 
@@ -324,9 +376,11 @@ function onWindowPointerDown(e) {
   if (isOverHKUI(e)) return;
   const c = app.canvas;
   if (!c?.graph?._nodes) return;
-  // Snapshot node sizes for resize guard (skip malformed nodes — A4)
+  // Snapshot node sizes for resize guard (skip malformed nodes — A4).
+  // Ref-keyed: with duplicate ids an id-keyed map keeps only the last clone's
+  // size and the resize guard misjudges (A2)
   const sizes = new Map();
-  for (const n of c.graph._nodes) { if (n && n.pos && n.size) sizes.set(n.id, [n.size[0], n.size[1]]); }
+  for (const n of c.graph._nodes) { if (n && n.pos && n.size) sizes.set(n, [n.size[0], n.size[1]]); }
   state._gestureSizes = sizes;
   // Baseline group rects
   const grects = new Map();
@@ -367,11 +421,14 @@ function onWindowPointerMove(e) {
   // the node under the cursor — dragging a pinned selection mate must not
   // ghost-move an innocent selected node)
   let draggedNode = null;
-  if (state.dragInfo?.nodeId != null) {
-    const id = state.dragInfo.nodeId;
-    const node = c.graph?._nodes?.find((n) => n.id === id) || null;
-    const stillSelected = node && c.selected_nodes &&
-      Object.values(c.selected_nodes).some((s) => s && s.id === id);
+  if (state.dragInfo?.node) {
+    // Hold the node REFERENCE, never its id: duplicate ids are real (hand-edited
+    // workflows, stale pastes) and find-by-id resolves to whichever clone sits
+    // earlier in _nodes — the drag session would be hijacked and the innocent
+    // clone ghost-moved (A2)
+    const node = state.dragInfo.node;
+    const stillSelected = c.graph?._nodes?.includes(node) && c.selected_nodes &&
+      Object.values(c.selected_nodes).some((s) => s === node);
     if (stillSelected) draggedNode = node;
     else state.dragInfo = null;
   }
@@ -382,9 +439,11 @@ function onWindowPointerMove(e) {
   }
   // Real position change beats selection guessing: dragging a pinned node
   // moves nothing at all, and the moved node may not be selected_nodes[0]
+  // (Keyed by node ref — with duplicate ids an id-keyed cache would keep only
+  // the last clone's state and misattribute the move, A2)
   if (!draggedNode && state._prevNodeStates && c.graph?._nodes) {
     for (const n of c.graph._nodes) {
-      const p = state._prevNodeStates.get(n.id);
+      const p = state._prevNodeStates.get(n);
       if (p && (p.x !== n.pos[0] || p.y !== n.pos[1] || p.w !== n.size[0] || p.h !== n.size[1])) {
         draggedNode = n; break;
       }
@@ -404,12 +463,12 @@ function onWindowPointerMove(e) {
     }
   }
 
-  // Refresh node cache for next tick
+  // Refresh node cache for next tick (ref-keyed, see A2 note above)
   if (c.graph?._nodes) {
     if (!state._prevNodeStates) state._prevNodeStates = new Map();
     state._prevNodeStates.clear();
     for (const n of c.graph._nodes)
-      state._prevNodeStates.set(n.id, { x: n.pos[0], y: n.pos[1], w: n.size[0], h: n.size[1] });
+      state._prevNodeStates.set(n, { x: n.pos[0], y: n.pos[1], w: n.size[0], h: n.size[1] });
   }
 
   if (!draggedNode) {
@@ -422,7 +481,7 @@ function onWindowPointerMove(e) {
   // node's size changed since then this gesture is a resize, not a move —
   // the desired position below would be a ghost rect drifting away from the
   // real node, so bail (same guard the group path applies in handleGroupDrag).
-  const _gSize = state._gestureSizes && draggedNode.size ? state._gestureSizes.get(draggedNode.id) : null;
+  const _gSize = state._gestureSizes && draggedNode.size ? state._gestureSizes.get(draggedNode) : null;
   if (_gSize && (Math.abs(_gSize[0] - draggedNode.size[0]) > 0.01 || Math.abs(_gSize[1] - draggedNode.size[1]) > 0.01)) {
     resetDrag();
     return;
@@ -446,21 +505,21 @@ function onWindowPointerMove(e) {
 
   // ── Multi-select drag ──
   if (multiNodes) {
-    const sessionMatches = state.dragInfo?.multiSelect && state.dragInfo.origIds?.has(draggedNode.id);
+    const sessionMatches = state.dragInfo?.multiSelect && state.dragInfo.origNodes?.has(draggedNode);
     if (!sessionMatches) {
       const origPositions = new Map();
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (const n of multiNodes) {
-        origPositions.set(n.id, { x: n.pos[0], y: n.pos[1] });
+        origPositions.set(n, { x: n.pos[0], y: n.pos[1] });
         const r = nodeRect(n);
         minX = Math.min(minX, r.x); minY = Math.min(minY, r.y);
         maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h);
       }
       state.dragInfo = {
-        nodeId: draggedNode.id, cursorX: e.clientX, cursorY: e.clientY,
+        node: draggedNode, cursorX: e.clientX, cursorY: e.clientY,
         multiSelect: true, origPositions,
         origBBox: { x: minX, y: minY, w: maxX - minX, h: maxY - minY },
-        origIds: new Set(multiNodes.map((n) => n.id)),
+        origNodes: new Set(multiNodes),   // node refs, not ids (A2)
         stickyMoveX: null, stickyMoveY: null,
       };
       return;
@@ -476,7 +535,7 @@ function onWindowPointerMove(e) {
     const targets = alignTargets(c);
     let bestX = null, bestY = null, bestXRect = null, bestYRect = null;
     for (const tg of targets) {
-      if (tg.kind === "node" && di.origIds.has(tg.id)) continue;
+      if (di.origNodes.has(tg.ref)) continue;
       const oRect = tg.rect;
       const dxc = Math.max(0, Math.max(oRect.x - (movingRect.x + movingRect.w), movingRect.x - (oRect.x + oRect.w)));
       const dyc = Math.max(0, Math.max(oRect.y - (movingRect.y + movingRect.h), movingRect.y - (oRect.y + oRect.h)));
@@ -492,9 +551,8 @@ function onWindowPointerMove(e) {
     const finalDx = dxGraph + (bestX ? bestX.delta : 0);
     const finalDy = dyGraph + (bestY ? bestY.delta : 0);
     const snapActive = !!(bestX || bestY);
-    for (const n of (c.graph?._nodes || [])) {
-      if (!di.origIds.has(n.id)) continue;
-      const orig = di.origPositions.get(n.id);
+    for (const n of di.origNodes) {
+      const orig = di.origPositions.get(n);
       if (orig) applyNodePos(n, orig.x + finalDx, orig.y + finalDy, snapActive);
     }
     const finalBBox = { x: di.origBBox.x + finalDx, y: di.origBBox.y + finalDy, w: di.origBBox.w, h: di.origBBox.h };
@@ -502,13 +560,13 @@ function onWindowPointerMove(e) {
     if (bestX && bestXRect) {
       const range = extendGuideRange("X", bestX.target,
         Math.min(finalBBox.y, bestXRect.y), Math.max(finalBBox.y + finalBBox.h, bestXRect.y + bestXRect.h),
-        targets, (ref) => ref && di.origIds.has(ref.id));
+        targets, (ref) => ref && di.origNodes.has(ref));
       pushGuide("X", bestX.target, range);
     }
     if (bestY && bestYRect) {
       const range = extendGuideRange("Y", bestY.target,
         Math.min(finalBBox.x, bestYRect.x), Math.max(finalBBox.x + finalBBox.w, bestYRect.x + bestYRect.w),
-        targets, (ref) => ref && di.origIds.has(ref.id));
+        targets, (ref) => ref && di.origNodes.has(ref));
       pushGuide("Y", bestY.target, range);
     }
     c.setDirty?.(true, true);
@@ -517,10 +575,10 @@ function onWindowPointerMove(e) {
 
   // ── Single-node drag ──
   // Initialise a fresh session if none exists, or the existing one is
-  // multi-select / belongs to a different node.
-  if (!state.dragInfo || state.dragInfo.multiSelect || state.dragInfo.nodeId !== draggedNode.id) {
+  // multi-select / belongs to a different node (ref compare — A2).
+  if (!state.dragInfo || state.dragInfo.multiSelect || state.dragInfo.node !== draggedNode) {
     state.dragInfo = {
-      nodeId: draggedNode.id,
+      node: draggedNode,
       posX: draggedNode.pos[0], posY: draggedNode.pos[1],
       cursorX: e.clientX, cursorY: e.clientY,
       multiSelect: false,

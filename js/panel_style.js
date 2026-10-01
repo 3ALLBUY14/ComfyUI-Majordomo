@@ -10,22 +10,16 @@ export const panelCSS = `
     --hk-accent-glow: rgba(139, 195, 243, 0.4);
     --hk-panel-border: rgba(139, 195, 243, 0.25);
     --hk-panel-border-light: rgba(139, 195, 243, 0.4);
-    --hk-handle-bg: rgba(26, 29, 36, 0.88);
     --hk-text-strong: #F0F7FF;
     --hk-text-muted: rgba(240, 247, 255, 0.65);
     --hk-text-dim: rgba(240, 247, 255, 0.4);
     --hk-top-offset: 48px;
     --hk-panel-max-height: calc(100vh - 96px);
     --hk-panel-width: clamp(260px, 17vw, min(288px, calc(100vw - 24px)));
-    --hk-button-size: clamp(28px, 6vw, 34px);
-    --hk-icon-size: clamp(14px, 3.5vw, 17px);
-    --hk-button-gap: clamp(3px, 0.8vw, 6px);
     --hk-header-font-size: clamp(14px, 1.6vw, 16px);
-    --hk-body-font-size: clamp(11px, 1.2vw, 12px);
     --hk-subtitle-font-size: clamp(9px, 1vw, 11px);
     --hk-radius-sm: 5px;
     --hk-radius-md: 8px;
-    --hk-radius-lg: 12px;
     --hk-radius-xl: 14px;
 }
 
@@ -619,104 +613,6 @@ export const panelCSS = `
     font-size: 10px;
 }
 
-.hk-handle {
-    border: 1px solid var(--hk-panel-border);
-    background: var(--hk-handle-bg);
-    color: var(--hk-accent);
-    border-radius: clamp(10px, 1.5vw, 14px) 0 0 clamp(10px, 1.5vw, 14px);
-    padding: clamp(8px, 1.2vh, 12px) clamp(3px, 0.5vw, 5px) clamp(6px, 0.8vh, 8px) clamp(7px, 1.2vw, 10px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(8px, 1.2vh, 10px);
-    cursor: pointer;
-    width: clamp(34px, 4vw, 50px);
-    max-width: 46px;
-    min-height: clamp(110px, 19vh, 150px);
-    max-height: 150px;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    font-size: clamp(9px, 1.2vw, 11px);
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    background-image: 
-        linear-gradient(180deg, rgba(139, 195, 243, 0.08) 0%, transparent 50%),
-        linear-gradient(135deg, rgba(139, 195, 243, 0.04), rgba(139, 195, 243, 0.01));
-    margin-right: -4px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    position: relative;
-    overflow: hidden;
-}
-
-.hk-handle::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--hk-accent), transparent);
-    opacity: 0.5;
-}
-
-.hk-handle::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, var(--hk-accent), transparent 30%, transparent 70%, var(--hk-accent));
-    opacity: 0.3;
-}
-
-.hk-handle img {
-    width: clamp(20px, 2.8vw, 26px);
-    height: clamp(20px, 2.8vw, 26px);
-    max-width: 26px;
-    max-height: 26px;
-    filter: drop-shadow(0 0 6px var(--hk-accent-glow));
-    transition: filter 0.3s ease, transform 0.3s ease;
-}
-
-.hk-handle:hover img {
-    filter: drop-shadow(0 0 10px var(--hk-accent-glow));
-    transform: scale(1.05);
-}
-
-.hk-handle span {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(180deg, var(--hk-accent-light), var(--hk-accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.hk-wrapper.collapsed .hk-handle span {
-    transform: rotate(0deg);
-}
-
-.hk-handle:focus-visible {
-    outline: 2px solid var(--hk-accent);
-    outline-offset: 3px;
-    box-shadow: 0 0 20px var(--hk-accent-glow);
-}
-
-.hk-wrapper.hk-has-selection .hk-handle {
-    box-shadow: 
-        0 0 20px rgba(139, 195, 243, 0.3),
-        inset 0 0 20px rgba(139, 195, 243, 0.05);
-    border-color: var(--hk-panel-border-light);
-}
-
-.hk-wrapper.hk-has-selection .hk-handle::before {
-    opacity: 0.8;
-}
-
 .hk-panel {
     --hk-panel-opacity: 0.85;
     --hk-panel-bg-rgb: 20, 22, 28;
@@ -1127,10 +1023,6 @@ export const panelCSS = `
     position: relative;
 }
 
-.hk-divider.hk-divider-spaced {
-    margin: clamp(12px, 1.6vw, 18px) 0 clamp(12px, 1.6vw, 18px);
-}
-
 .hk-section {
     display: flex;
     flex-direction: column;
@@ -1140,14 +1032,12 @@ export const panelCSS = `
 
 .hk-wrapper.visible .hk-header,
 .hk-wrapper.visible .hk-section,
-.hk-wrapper.visible .hk-info,
 .hk-wrapper.visible .hk-opacity-bar {
     animation: hk-section-fade 0.3s ease-out both;
 }
 
 .hk-wrapper.visible .hk-header { animation-delay: 0.06s; }
 .hk-wrapper.visible .hk-section { animation-delay: 0.1s; }
-.hk-wrapper.visible .hk-info { animation-delay: 0.14s; }
 .hk-wrapper.visible .hk-opacity-bar { animation-delay: 0.18s; }
 
 @keyframes hk-section-fade {
@@ -1183,7 +1073,6 @@ export const panelCSS = `
     border-radius: 2px;
 }
 
-.hk-palette-header,
 .hk-custom-inline,
 .hk-color-section-title {
     font-size: var(--hk-subtitle-font-size);
@@ -1303,29 +1192,6 @@ export const panelCSS = `
     filter: grayscale(0.5) brightness(0.7);
 }
 
-.hk-info {
-    background: 
-        linear-gradient(135deg, rgba(40, 44, 54, 0.7) 0%, rgba(30, 33, 42, 0.8) 100%);
-    border-radius: var(--hk-radius-md);
-    padding: 12px 14px;
-    font-size: var(--hk-body-font-size);
-    color: var(--hk-text-muted);
-    text-align: left;
-    line-height: 1.5;
-    border: 1px solid rgba(139, 195, 243, 0.1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-.hk-info small {
-    display: block;
-    margin-top: 6px;
-    font-size: 11px;
-    opacity: 0.7;
-    font-style: italic;
-}
-
-.hk-color-strip,
-.hk-color-footer,
 .hk-color-recent {
     display: flex;
     flex-wrap: wrap;
@@ -1413,39 +1279,6 @@ export const panelCSS = `
     justify-content: space-between;
     margin-top: 12px;
     color: var(--hk-text-muted);
-}
-
-.hk-custom-toggle {
-    border: 1px solid rgba(139, 195, 243, 0.25);
-    background: 
-        linear-gradient(180deg, rgba(139, 195, 243, 0.12) 0%, rgba(139, 195, 243, 0.06) 100%);
-    color: var(--hk-accent);
-    border-radius: var(--hk-radius-sm);
-    padding: 5px 14px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    font-family: inherit;
-    position: relative;
-    overflow: hidden;
-}
-
-.hk-custom-toggle:hover {
-    background: 
-        linear-gradient(180deg, rgba(139, 195, 243, 0.2) 0%, rgba(139, 195, 243, 0.1) 100%);
-    border-color: rgba(139, 195, 243, 0.4);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.hk-custom-toggle:active {
-    transform: translateY(0);
-}
-
-.hk-custom-toggle:focus-visible {
-    outline: 2px solid var(--hk-accent);
-    outline-offset: 2px;
 }
 
 .hk-custom-inline {
@@ -1748,21 +1581,6 @@ animation: hk-save-flash 0.35s ease;
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
-}
-
-.hk-palette-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    width: 100%;
-    margin: 0 0 6px 0;
-    padding: 0 2px;
-    color: var(--hk-text-muted);
-    font-weight: 600;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
 }
 
 .hk-palette-bar {
@@ -2129,117 +1947,6 @@ transform: translateY(0) scale(0.95);
 .hk-color-chip.selected::after {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
-}
-
-.hk-color-custom-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: var(--hk-body-font-size);
-    color: var(--hk-text-muted);
-    margin-top: 14px;
-}
-
-.hk-toggle-placeholder {
-    width: 40px;
-    height: 22px;
-    border-radius: 12px;
-    border: 1px solid rgba(139, 195, 243, 0.25);
-    background: 
-        linear-gradient(180deg, rgba(30, 33, 42, 0.8) 0%, rgba(20, 22, 28, 0.9) 100%);
-    position: relative;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.hk-toggle-placeholder::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--hk-accent-light), var(--hk-accent-dark));
-    box-shadow: 
-        0 2px 6px rgba(0, 0, 0, 0.3),
-        0 0 8px var(--hk-accent-glow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hk-toggle-placeholder:hover {
-    border-color: rgba(139, 195, 243, 0.4);
-}
-
-.hk-color-picker-placeholder {
-    margin-top: 16px;
-    border: 1px solid rgba(139, 195, 243, 0.2);
-    border-radius: var(--hk-radius-lg);
-    background: linear-gradient(135deg, #ffffff 0%, #ff0000 50%, #000000 100%);
-    height: clamp(160px, 32vh, 220px);
-    position: relative;
-    overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.hk-color-picker-toolbar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 56px;
-    background: 
-        linear-gradient(180deg, rgba(16, 17, 21, 0.9) 0%, rgba(10, 11, 14, 0.95) 100%);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 16px;
-    color: var(--hk-text-muted);
-    font-size: var(--hk-body-font-size);
-    border-top: 1px solid rgba(139, 195, 243, 0.15);
-}
-
-.hk-color-picker-toolbar .hk-swatch {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.hk-color-picker-toolbar .hk-slider-placeholder {
-    flex: 1;
-    height: 10px;
-    border-radius: 6px;
-    background: linear-gradient(90deg, red, yellow, lime, cyan, blue, magenta, red);
-    box-shadow: 
-        inset 0 2px 4px rgba(0, 0, 0, 0.3),
-        0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.hk-rgb-placeholder {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: var(--hk-subtitle-font-size);
-}
-
-.hk-rgb-placeholder .hk-rgb-pill {
-    width: 38px;
-    height: 24px;
-    border-radius: 6px;
-    border: 1px solid rgba(139, 195, 243, 0.2);
-    background: 
-        linear-gradient(180deg, rgba(30, 33, 42, 0.8) 0%, rgba(20, 22, 28, 0.9) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--hk-text-muted);
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 /* ── v3.1 Dual-color chips ── */
