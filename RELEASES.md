@@ -4,8 +4,31 @@
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| [v1.0.2](#v102--2026-10-01) | 2026-10-01 | New-frontend compatibility: alignment & undo reliable again; snap/group fixes; color panel fixes; Alt+U shortcut |
 | [v1.0.1](#v101--2026-09-12) | 2026-09-12 | Fix: save-color button label matched behavior; zh close-hint aligned; snap tooltip refreshes after language switch; removed unused locales/ |
 | [v1](#v1--2026-07-28) | 2026-07-28 | Initial release: alignment panel, 14 palettes, dual-track color, drag-to-snap, quick group, font slider |
+
+---
+
+## v1.0.2 — 2026-10-01
+
+### 🇬🇧 English
+
+- **🧬 Full compatibility with the new ComfyUI frontend** — Position and size changes now go through the channel the new frontend accepts: flow layout no longer resets nodes back to origin, undo/redo are exact, all six size-match commands stick instead of springing back, and group font size behaves again.
+- **🧲 Better snapping** — Dragging a group now carries link reroute points and sub-groups along and leaves pinned nodes in place; with duplicate-id or malformed nodes in a graph (hand-edited workflows, misbehaving plugins), snapping no longer teleports unrelated nodes or stops working; resizing a node no longer makes it jump.
+- **📐 More reliable alignment & layout** — Flow layout uses longest-path layering, so cross-connected structures land in the right columns; size matching uses live sizes; one bad-coordinate node can no longer wipe the whole selection's positions; selecting 100k+ nodes no longer fails silently.
+- **🎨 Color panel fixes** — Canceling the color picker (Esc / click outside) restores the original color; hover preview no longer gets stuck; Enter in the hex box now commits; "Create group" painting is undoable; a corrupted custom palette no longer crashes the panel and can be deleted; group titles auto-switch to white on dark colors.
+- **⌨️ Shortcut change** — Alignment undo/redo moved to **Alt+U / Alt+Shift+U**: no longer hijacks Ctrl+Z (ComfyUI's own undo) and avoids GPU-overlay hotkeys.
+- **🌐 Misc** — Language switch refreshes all tooltips immediately; "Match minimum" renamed to "Shrink each to its minimum size" to match what it does; panel position is now remembered.
+
+### 🇨🇳 中文
+
+- **🧬 全面适配新版 ComfyUI 前端** — 位置与尺寸改动改走新版前端认可的通道：流式排列不再把节点重置回原点、撤销/重做精确还原、六种尺寸统一的结果不再被打回、组字体大小恢复正常。
+- **🧲 吸附更稳** — 拖动分组时连线拐弯点、嵌套子组正确跟随，钉住的节点不再被拖走；图中存在重复 id 或畸形节点时（手改工作流、第三方插件造成），吸附不再搬走无辜节点、不再整体失效；缩放节点不再被误判成拖动而瞬移。
+- **📐 对齐与排列更可靠** — 流式排列改用最长路径分层，跨接结构不再排错列；尺寸匹配按实时尺寸计算；一个坏坐标节点不再写坏整批节点位置；十万级节点全选操作不再静默失效。
+- **🎨 颜色面板修复** — 取色器取消（Esc / 点外部）恢复原色；悬停预览不再卡死；hex 输入框回车提交生效；「创建分组」的批量染色可撤销；损坏的自定义调色板不再导致崩溃且可删除；深色组的标题自动换白字，看得清。
+- **⌨️ 快捷键更新** — 对齐撤销/重做改用 **Alt+U / Alt+Shift+U**：不再抢占 Ctrl+Z（ComfyUI 自身的撤销），也避开显卡 overlay 热键。
+- **🌐 其他** — 切换语言后所有提示立即刷新；「匹配最小」更名为「各自收紧到最小尺寸」以符合实际行为；面板位置记忆生效。
 
 ---
 

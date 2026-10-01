@@ -38,3 +38,7 @@ comfyui-palette-v2.json
 # Agent workspace (test scripts, isolated instance data, workflow drafts)
 .zcode/
 .mimosa/
+
+# Local-only notes & tool configs (never publish)
+代码质量报告.md
+.zcodeignore
