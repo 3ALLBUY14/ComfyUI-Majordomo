@@ -1,6 +1,6 @@
-// 流式排列分层自检（node test/flow-layout-check.mjs）
-// 从 js/main.js 原样抽出 q2/b0/m0/G2 四个函数（花括号配对切片，不是手抄复制品），
-// 断言最长路径分层的正确性。改动 G2/q2 之后跑这个文件，挂了就是改坏了。
+// 流式排列/对齐堆叠自检（node test/flow-layout-check.mjs）
+// 从 js/main.js 原样抽出 q2/b0/m0/G2/g0/_ns 等函数（花括号配对切片，不是手抄复制品），
+// 断言最长路径分层与对齐堆叠间距的正确性。改动 G2/q2/g0 之后跑这个文件，挂了就是改坏了。
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
@@ -41,6 +41,7 @@ function extractFn(name) {
 const { q2, G2 } = new Function(
   extractFn("q2") + extractFn("b0") + extractFn("m0") + extractFn("G2") + "; return { q2, b0, m0, G2 };"
 )();
+
 
 // 造 litegraph 风格节点：edges 是 [fromId, toId] 列表，link id 自增
 let _link = 0;
@@ -102,4 +103,64 @@ for (let g = 0; g < 2000; g++) {
   }
 }
 
+// ── 对齐堆叠间距（g0）─────────────────────────────────────────────────────────
+// node.pos[1] 是主体顶边、标题条在 pos[1] 上方且不计入 node.size（新前端实测
+// boundingRect=[pos.x, pos.y-30, w, size.h+30]）。垂直堆叠步进必须补标题高，
+// 否则间距被下一行的标题吃光（默认 30 时视觉间隙恰好归零=节点粘在一起）。
+const { g0, _ns } = new Function(
+  // Node 下没有 window：给生产表达式原样的 LiteGraph 桩（与浏览器一致取 30）
+  "globalThis.window = { LiteGraph: { NODE_TITLE_HEIGHT: 30 } };" +
+  "const _arrLike = (v) => !!v && typeof v.length == 'number';" +
+  "let _alignGap = 30;" +
+  "const _nodeTitleH = () => (window.LiteGraph && window.LiteGraph.NODE_TITLE_HEIGHT) || 30;" +
+  "const T2 = new Map();" +
+  extractFn("_ns") + extractFn("_mx") + extractFn("_mn") +
+  extractFn("q2") + extractFn("b0") + extractFn("m0") + extractFn("G2") +
+  extractFn("g0") + "; return { g0, _ns };"
+)();
+const TITLE_H = 30, GAP = 30;
+function mkAlignNodes(defs) {
+  // defs: [[id, w, h, x, y], ...]
+  return defs.map(([id, w, h, x, y]) => ({ id, pos: [x, y], size: [w, h] }));
+}
+
+// 8) 左对齐：垂直堆叠步进 = 主体高 + 标题高 + 间距；视觉间隙（下一节点标题顶 - 上一节点主体底）= 间距
+{
+  const nodes = mkAlignNodes([[1, 200, 100, 0, 300], [2, 150, 200, 50, 0], [3, 180, 50, 80, 150]]);
+  const out = g0("left", nodes);
+  const byId = Object.fromEntries(nodes.map((n, i) => [n.id, out[i]]));
+  const sorted = [...nodes].sort((a, b) => a.pos[1] - b.pos[1]);
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = byId[sorted[i - 1].id], cur = byId[sorted[i].id];
+    assert.equal(cur.y - (prev.y + byId[sorted[i - 1].id].height), TITLE_H + GAP,
+      `左对齐第 ${i} 步主体间距应为 标题${TITLE_H}+间距${GAP}`);
+    assert.equal((cur.y - TITLE_H) - (prev.y + prev.height), GAP,
+      `左对齐第 ${i} 步视觉间隙应恰为间距 ${GAP}（标题不得吃掉间距）`);
+  }
+}
+
+// 9) 顶对齐：水平堆叠步进 = 宽 + 间距（无标题介入，不许把标题也加进去）
+{
+  const nodes = mkAlignNodes([[1, 200, 100, 0, 300], [2, 150, 200, 50, 0], [3, 180, 50, 80, 150]]);
+  const out = g0("top", nodes);
+  const byId = Object.fromEntries(nodes.map((n, i) => [n.id, out[i]]));
+  const sorted = [...nodes].sort((a, b) => a.pos[0] - b.pos[0]);
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = byId[sorted[i - 1].id];
+    assert.equal(byId[sorted[i].id].x - (prev.x + prev.width), GAP, `顶对齐第 ${i} 步水平间距应恰为 ${GAP}`);
+  }
+}
+
+// 10) 垂直流式（g0 预览用例）：行间步进 = 行最大主体高 + 标题高 + 间距（A→B→C 三层，
+//     需真实连线才会分层——孤点全落 level0 被排成一行）
+{
+  const chain = mkNodes(["A", "B", "C"], [["A", "B"], ["B", "C"]]);
+  chain[0].size = [200, 100]; chain[1].size = [200, 150]; chain[2].size = [200, 120];
+  const out = g0("vertical-flow", chain);
+  const byId = Object.fromEntries(chain.map((n, i) => [n.id, out[i]]));
+  assert.equal(byId.B.y - (byId.A.y + 100), TITLE_H + GAP, "垂直流式 A→B 行间步进应含标题高");
+  assert.equal(byId.C.y - (byId.B.y + 150), TITLE_H + GAP, "垂直流式 B→C 行间步进应含标题高");
+}
+
 console.log("PASS: 最长路径分层自检（链 / 跨接 / 环 / 自环 / id=0 / 列内排序 / 2000 张随机图）");
+console.log("PASS: 对齐堆叠间距自检（左对齐含标题步进 / 顶对齐不含标题 / 垂直流式行间含标题）");

@@ -1921,8 +1921,10 @@ function D0() {
                     pointer-events: none;
                     transition: all 0.2s ease;
                 `;
-        const d = (l.x + t.ds.offset[0]) * t.ds.scale, u = (l.y + t.ds.offset[1]) * t.ds.scale, x = t.canvas.getBoundingClientRect();
-        const f = x.left + d, w = x.top + u, s = l.width * t.ds.scale, S = l.height * t.ds.scale;
+        // 预览框按"完整视觉边界"画（标题条含在内），与真实节点渲染一致——
+        // 否则预览框之间显示的缝隙比落地后大（预览有缝、落地粘死）
+        const _th = _nodeTitleH(), d = (l.x + t.ds.offset[0]) * t.ds.scale, u = (l.y - _th + t.ds.offset[1]) * t.ds.scale, x = t.canvas.getBoundingClientRect();
+        const f = x.left + d, w = x.top + u, s = l.width * t.ds.scale, S = (l.height + _th) * t.ds.scale;
         p.style.left = f + "px", p.style.top = w + "px", p.style.width = s + "px", p.style.height = S + "px", document.body.appendChild(p), J2.push(p);
       }
     });
@@ -1936,6 +1938,11 @@ function D0() {
   // 读侧与写侧（UI 验证 0-200）对称：只验 >=0 会放行 localStorage 里的超大值，
   // 流式排列把节点摊到几十亿像素外且只能手改输入框恢复（A5）
   try { const _g = parseInt(localStorage.getItem("hk-align-gap")); !isNaN(_g) && _g >= 0 && _g <= 200 && (_alignGap = _g); } catch {}
+  // node.pos[1] 是节点主体顶边，标题条画在其上方且不计入 node.size（新前端实测
+  // boundingRect=[pos.x, pos.y-30, w, size.h+30]）。垂直堆叠只按主体高度步进时，
+  // 下一行标题会反向吃掉 _alignGap 的间距——默认 30 时视觉间隙恰好归零（节点粘在一起），
+  // 而预览框不含标题仍显示有缝，造成"预览有缝、落地粘死"。与 group.js 组边界算法同一约定。
+  const _nodeTitleH = () => (window.LiteGraph && window.LiteGraph.NODE_TITLE_HEIGHT) || 30;
   let _hkUndoBtn = null, _hkRedoBtn = null;
   let _hkUndoStack = [], _hkRedoStack = [];
   const _HK_MAX_UNDO = 50;
@@ -2070,7 +2077,7 @@ function D0() {
             y: u,
             width: h,
             height: n
-          }), u += n + _alignGap;
+          }), u += n + _nodeTitleH() + _alignGap;
         }), t.forEach((e) => {
           o.push(y.get(e));
         });
@@ -2085,7 +2092,7 @@ function D0() {
             y: k,
             width: h,
             height: n
-          }), k += n + _alignGap;
+          }), k += n + _nodeTitleH() + _alignGap;
         }), t.forEach((e) => {
           o.push(N.get(e));
         });
@@ -2130,7 +2137,7 @@ function D0() {
             y: $,
             width: n,
             height: h
-          }), $ += h + _alignGap;
+          }), $ += h + _nodeTitleH() + _alignGap;
         }), t.forEach((e) => {
           o.push(g.get(e));
         });
@@ -2192,7 +2199,7 @@ function D0() {
                 y: q,
                 width: b._calculatedSize[0],
                 height: b._calculatedSize[1]
-              }), q += b._calculatedSize[1] + C);
+              }), q += b._calculatedSize[1] + _nodeTitleH() + C);
             });
           }
         }), t.forEach((e) => {
@@ -2233,7 +2240,7 @@ function D0() {
                 const D = t2[b] || [], s2 = _mx(D.map(
                   (I) => I && I._calculatedSize && I._calculatedSize[1] ? I._calculatedSize[1] : 100
                 ));
-                E += s2 + V2 + B2;
+                E += s2 + _nodeTitleH() + V2 + B2;
               }
             let q = Q;
             n.forEach((b) => {
@@ -2535,13 +2542,13 @@ function D0() {
               const B = w[g] || [], K = _mx(B.map(
                 (V) => V && V._calculatedSize && V._calculatedSize[isH ? 0 : 1] ? V._calculatedSize[isH ? 0 : 1] : (isH ? 150 : 100)
               ));
-              G += K + gap + f;
+              G += K + (isH ? 0 : _nodeTitleH()) + gap + f;
             }
           let $ = isH ? y : u;
           S.forEach((g) => {
             if (g && g.pos && g._calculatedSize) {
             if (isH) {
-              g.pos = [G, $], $ += g._calculatedSize[1] + gap;
+              g.pos = [G, $], $ += g._calculatedSize[1] + _nodeTitleH() + gap;
             } else {
               g.pos = [$, G], $ += g._calculatedSize[0] + gap;
             }
