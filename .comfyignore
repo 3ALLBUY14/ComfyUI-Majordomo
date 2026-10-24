@@ -8,3 +8,20 @@ doc/
 *.zip
 original-palette-extracted.json
 comfyui-palette-v2.json
+
+# Local drafts, agent workspaces, caches and development-only checks
+README*.preview.*
+README*.draft.*
+readme-preview*
+.zcode/
+.mimosa/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+__pycache__/
+*.pyc
+playwright-report/
+test-results/
+test/
+代码质量报告.md
+.zcodeignore

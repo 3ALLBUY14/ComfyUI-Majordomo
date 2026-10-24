@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="444" viewBox="0 0 1200 444" role="img" aria-labelledby="title desc">
+<title id="title">ComfyUI-Majordomo · 让工作流，一目了然</title>
+<desc id="desc">节点整理工具封面。右侧以模型、提示词、采样和解码节点示意对齐、排列、配色与分组，实际操作见文档演示。提供 14 种整理工具、14 套调色板、中英双语和快速分组。</desc>
+<defs>
+  <linearGradient id="background" x2="1" y2="1"><stop stop-color="#17263b"/><stop offset=".6" stop-color="#111f31"/><stop offset="1" stop-color="#152a3a"/></linearGradient>
+  <radialGradient id="blue-glow"><stop stop-color="#397ac2" stop-opacity=".2"/><stop offset="1" stop-color="#397ac2" stop-opacity="0"/></radialGradient>
+  <pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#9cbadd" opacity=".13"/></pattern>
+  <clipPath id="bounds"><rect x=".5" y=".5" width="1199" height="443" rx="20"/></clipPath>
+</defs>
+<g clip-path="url(#bounds)">
+  <rect width="1200" height="444" fill="url(#background)"/>
+  <rect x="590" width="610" height="344" fill="url(#grid)"/>
+  <circle cx="1050" cy="80" r="340" fill="url(#blue-glow)"/>
+  <path d="M568 0 516 344" stroke="#7897bb" stroke-opacity=".08"/>
+  <path d="M0 344h1200" stroke="#7294bc" stroke-opacity=".19"/>
+  <rect y="345" width="1200" height="99" fill="#091421" fill-opacity=".25"/>
+</g>
+<rect x=".5" y=".5" width="1199" height="443" rx="20" fill="none" stroke="#344c69"/>
+<g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif">
+  <path d="M58 48v17m7-15h19v5H65zm0 10h13v5H65z" fill="#80bfff"/>
+  <text x="98" y="62" font-size="11" letter-spacing="2.2" fill="#9db9d8">WORKFLOW, WELL ORGANIZED.</text>
+  <text x="56" y="143" font-size="54" font-weight="700" letter-spacing="1" fill="#f4f8ff">让工作流，</text>
+  <text x="56" y="211" font-size="54" font-weight="700" letter-spacing="1" fill="#9bcaff">一目了然。</text>
+  <text x="59" y="252" font-size="15" fill="#b2c5dc">少一点手动拖拽，多一点井然有序。</text>
+  <path d="M59 285h30" stroke="#8abfff" stroke-width="2" stroke-linecap="round"/>
+  <text x="101" y="290" font-size="12" fill="#91accb">对齐 · 排列 · 配色 · 分组</text>
+  <rect x="620" y="49" width="558" height="278" rx="12" fill="#558fca" fill-opacity=".035" stroke="#6c96c1" stroke-opacity=".35" stroke-dasharray="5 5"/>
+  <text x="638" y="71" font-size="10" fill="#8ba7c7">图像生成</text>
+  <text x="1159" y="71" text-anchor="end" font-size="9" fill="#6f8aab">功能示意</text>
+  <path d="M636 94h528" stroke="#8dbcf0" stroke-opacity=".5" stroke-dasharray="4 5"/>
+  <path d="M1030 84v232" stroke="#8dbcf0" stroke-opacity=".25" stroke-dasharray="4 5"/>
+  <g fill="none" stroke="#9ecaff" stroke-width="2" opacity=".8">
+    <path d="M791 137h42"/>
+    <path d="M976 137h54"/>
+    <path d="M791 153C815 153 795 201 826 201h179C1025 201 1007 153 1030 153"/>
+    <path d="M1101 180v42" stroke="#87d2ba"/>
+  </g>
+<g transform="translate(648 94)">
+      <rect x="0" y="5" width="143" height="86" rx="8" fill="#080f19" opacity=".28"/>
+      <rect width="143" height="86" rx="8" fill="#1e2d40" stroke="#99c9fa" stroke-opacity=".45"/>
+      <path d="M8 0h127a8 8 0 0 1 8 8v20H0V8a8 8 0 0 1 8-8" fill="#99c9fa" fill-opacity=".16"/>
+      <text x="12" y="19" font-size="13" font-weight="600" fill="#99c9fa">加载模型</text>
+      <rect x="11" y="39" width="121" height="17" rx="4" fill="#142031"/>
+      <text x="17" y="51" font-size="9.5" fill="#a0b6ce">checkpoint</text>
+      <rect x="12" y="66" width="80" height="4" rx="2" fill="#99c9fa" fill-opacity=".25"/><circle cx="143" cy="43" r="3.4" fill="#99c9fa" stroke="#192638" stroke-width="1.6"/><circle cx="143" cy="59" r="3.4" fill="#99c9fa" stroke="#192638" stroke-width="1.6"/>
+    </g><g transform="translate(833 94)">
+      <rect x="0" y="5" width="143" height="86" rx="8" fill="#080f19" opacity=".28"/>
+      <rect width="143" height="86" rx="8" fill="#1e2d40" stroke="#b4c7ff" stroke-opacity=".45"/>
+      <path d="M8 0h127a8 8 0 0 1 8 8v20H0V8a8 8 0 0 1 8-8" fill="#b4c7ff" fill-opacity=".16"/>
+      <text x="12" y="19" font-size="13" font-weight="600" fill="#b4c7ff">提示词</text>
+      <rect x="11" y="39" width="121" height="17" rx="4" fill="#142031"/>
+      <text x="17" y="51" font-size="9.5" fill="#a0b6ce">positive / negative</text>
+      <rect x="12" y="66" width="80" height="4" rx="2" fill="#b4c7ff" fill-opacity=".25"/><circle cx="0" cy="43" r="3.4" fill="#b4c7ff" stroke="#192638" stroke-width="1.6"/><circle cx="143" cy="43" r="3.4" fill="#b4c7ff" stroke="#192638" stroke-width="1.6"/>
+    </g><g transform="translate(1030 94)">
+      <rect x="0" y="5" width="143" height="86" rx="8" fill="#080f19" opacity=".28"/>
+      <rect width="143" height="86" rx="8" fill="#1e2d40" stroke="#8bd5bf" stroke-opacity=".45"/>
+      <path d="M8 0h127a8 8 0 0 1 8 8v20H0V8a8 8 0 0 1 8-8" fill="#8bd5bf" fill-opacity=".16"/>
+      <text x="12" y="19" font-size="13" font-weight="600" fill="#8bd5bf">KSampler</text>
+      <rect x="11" y="39" width="121" height="17" rx="4" fill="#142031"/>
+      <text x="17" y="51" font-size="9.5" fill="#a0b6ce">steps 20 · cfg 7.0</text>
+      <rect x="12" y="66" width="80" height="4" rx="2" fill="#8bd5bf" fill-opacity=".25"/><circle cx="0" cy="43" r="3.4" fill="#8bd5bf" stroke="#192638" stroke-width="1.6"/><circle cx="0" cy="59" r="3.4" fill="#8bd5bf" stroke="#192638" stroke-width="1.6"/><circle cx="71" cy="86" r="3.4" fill="#8bd5bf" stroke="#192638" stroke-width="1.6"/>
+    </g><g transform="translate(1030 222)">
+      <rect x="0" y="5" width="143" height="86" rx="8" fill="#080f19" opacity=".28"/>
+      <rect width="143" height="86" rx="8" fill="#1e2d40" stroke="#cab9fa" stroke-opacity=".45"/>
+      <path d="M8 0h127a8 8 0 0 1 8 8v20H0V8a8 8 0 0 1 8-8" fill="#cab9fa" fill-opacity=".16"/>
+      <text x="12" y="19" font-size="13" font-weight="600" fill="#cab9fa">VAE 解码</text>
+      <rect x="11" y="39" width="121" height="17" rx="4" fill="#142031"/>
+      <text x="17" y="51" font-size="9.5" fill="#a0b6ce">latents → image</text>
+      <rect x="12" y="66" width="80" height="4" rx="2" fill="#cab9fa" fill-opacity=".25"/><circle cx="71" cy="0" r="3.4" fill="#cab9fa" stroke="#192638" stroke-width="1.6"/>
+    </g>
+  <g fill="#7694b6" stroke="#547292" stroke-opacity=".4"><path d="M334 368v51M627 368v51M918 368v51"/></g>
+  <text x="59" y="385" font-size="23" font-weight="600" fill="#e2edfb">14</text>
+  <text x="101" y="384" font-size="12" fill="#aac1dc">种整理工具</text>
+  <text x="59" y="410" font-size="10" fill="#7793b3">对齐 / 尺寸 / 自动排列</text>
+  <text x="363" y="385" font-size="23" font-weight="600" fill="#e2edfb">14</text>
+  <text x="405" y="384" font-size="12" fill="#aac1dc">套预设调色板</text>
+  <text x="363" y="410" font-size="10" fill="#7793b3">预览 / 保存 / 复用配色</text>
+  <text x="656" y="384" font-size="18" font-weight="600" fill="#d2e9e0">快速分组</text>
+  <text x="656" y="410" font-size="10" fill="#7793b3">整理选区 / 整组控制</text>
+  <text x="947" y="384" font-size="18" font-weight="600" fill="#e2edfb">中英双语</text>
+  <text x="947" y="410" font-size="10" fill="#7793b3">切换语言 / MIT 开源</text>
+</g></svg>
