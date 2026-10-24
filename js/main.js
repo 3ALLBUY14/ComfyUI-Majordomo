@@ -123,6 +123,8 @@ function D0() {
       randomColor: "Random color",
       clearVram: "Free VRAM & RAM",
       alignGap: "Spacing",
+      ok: "OK",
+      cancel: "Cancel",
       undo: "Undo alignment",
       redo: "Redo alignment",
       noUndo: "Nothing to undo",
@@ -202,6 +204,8 @@ function D0() {
       randomColor: "随机配色",
       clearVram: "清理显存内存",
       alignGap: "间距",
+      ok: "确定",
+      cancel: "取消",
       undo: "撤销对齐",
       redo: "重做对齐",
       noUndo: "没有可撤销的操作",
@@ -482,6 +486,88 @@ function D0() {
   };
   const _CUSTOM_PALETTE_KEY = "hk-custom-palettes";
   let _customPalettes = [];
+  // ── 面板小对话框（替代 window.prompt / window.confirm）─────────────────────
+  // Electron 壳（桌面版/启动器）不实现 window.prompt；页面处于隐藏态时
+  // window.confirm 被浏览器静默拒绝直接返回 false —— 两者都表现为"点了没反应"
+  // （Pixaroma 同款踩坑结论）。needInput=true 时是命名框，否则是确认框；
+  // onOk 在确认时回调（needInput 时收到去空格后的文本）。
+  function _hkDialog({ message, needInput = false, defaultValue = "", anchor = null, onOk }) {
+    // 独占：先关掉已开的小对话框（避免叠加后一次 Enter 触发多个 onOk）
+    document.querySelectorAll(".hk-mini-dialog").forEach((d) => d.remove());
+    const wrap = document.createElement("div");
+    wrap.className = "hk-mini-dialog";
+    wrap.style.cssText = "position:fixed;z-index:10001;background:#1e1e22;border:1px solid #4a4a55;border-radius:8px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.5);font-size:12px;color:#eee;width:236px";
+    const close = () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("pointerdown", onOutside, true);
+      wrap.remove();
+    };
+    let done = false;
+    const ok = () => {
+      // 被后续对话框清场移除后，残留的 document 监听必须自熄
+      if (done || !wrap.isConnected) return;
+      const v = needInput ? input.value.trim() : true;
+      if (needInput && !v) return;
+      done = true;
+      close();
+      onOk(v);
+    };
+    const onKey = (e) => {
+      if (!wrap.isConnected) return;
+      if (e.key === "Enter") { e.preventDefault(); ok(); }
+      else if (e.key === "Escape") { e.preventDefault(); close(); }
+    };
+    const onOutside = (e) => {
+      if (!wrap.contains(e.target) && !(anchor && (e.target === anchor || anchor.contains(e.target)))) close();
+    };
+    const msg = document.createElement("div");
+    msg.textContent = message;
+    msg.style.marginBottom = needInput ? "8px" : "12px";
+    msg.style.lineHeight = "1.5";
+    wrap.appendChild(msg);
+    let input = null;
+    if (needInput) {
+      input = document.createElement("input");
+      input.type = "text";
+      input.value = defaultValue;
+      input.style.cssText = "width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid #444;border-radius:4px;background:#222;color:#eee;font-size:12px;margin-bottom:10px";
+      wrap.appendChild(input);
+    }
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;justify-content:flex-end;gap:8px";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button", cancelBtn.textContent = _("cancel");
+    cancelBtn.style.cssText = "padding:3px 12px;border:1px solid #444;border-radius:4px;background:#222;color:#ccc;cursor:pointer;font-size:12px";
+    cancelBtn.addEventListener("click", close);
+    const okBtn = document.createElement("button");
+    okBtn.type = "button", okBtn.textContent = _("ok");
+    okBtn.style.cssText = "padding:3px 12px;border:none;border-radius:4px;background:#4a90d9;color:#fff;cursor:pointer;font-size:12px";
+    okBtn.addEventListener("click", ok);
+    row.appendChild(cancelBtn), row.appendChild(okBtn), wrap.appendChild(row);
+    document.body.appendChild(wrap);
+    // 定位：优先贴在面板外侧（右→左），绝不压住面板与头像；两侧都放不下时
+    // 才退回触发按钮下方并整体夹取到视口内
+    const wr = wrap.getBoundingClientRect();
+    const panelR = document.querySelector(".hk-wrapper")?.getBoundingClientRect();
+    const ar = anchor ? anchor.getBoundingClientRect() : null;
+    let x, y;
+    if (panelR && panelR.right + 8 + wr.width <= window.innerWidth - 8) {
+      x = panelR.right + 8, y = ar ? ar.top : (window.innerHeight - wr.height) / 2;
+    } else if (panelR && panelR.left - 8 - wr.width >= 8) {
+      x = panelR.left - 8 - wr.width, y = ar ? ar.top : (window.innerHeight - wr.height) / 2;
+    } else if (ar) {
+      x = ar.left, y = ar.bottom + 6;
+    } else {
+      x = (window.innerWidth - wr.width) / 2, y = (window.innerHeight - wr.height) / 2;
+    }
+    x = Math.max(8, Math.min(x, window.innerWidth - wr.width - 8));
+    y = Math.max(8, Math.min(y, window.innerHeight - wr.height - 8));
+    wrap.style.left = x + "px", wrap.style.top = y + "px";
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("pointerdown", onOutside, true);
+    if (input) input.focus(), input.select();
+    else okBtn.focus();
+  }
   function _loadCustomPalettes() {
     try {
       const t = localStorage.getItem(_CUSTOM_PALETTE_KEY);
@@ -1512,7 +1598,7 @@ function D0() {
       Q = Math.max(10, Math.min(Q, window.innerHeight - R - 10)), Z.style.left = j + "px", Z.style.top = Q + "px";
     }, r = () => {
       var R;
-      const m = (R = window.app) == null ? void 0 : R.graph, z = (m ? Object.values(m._nodes || {}) : []).filter((Q) => Q && Q.is_selected), P = z.length > 1;
+      const m = _curGraph(), z = (m ? Object.values(m._nodes || {}) : []).filter((Q) => Q && Q.is_selected), P = z.length > 1;
       Z.querySelectorAll(".hk-button").forEach((Q) => {
         const l2 = Q.dataset.alignmentType === "size-min";
         Q.disabled = l2 ? z.length < 1 : !P;
@@ -1698,22 +1784,25 @@ function D0() {
     const _savePalBtn = document.createElement("button");
     _savePalBtn.type = "button", _savePalBtn.className = "hk-palette-save-btn", _savePalBtn.innerHTML = "\u{1F4BE}", _savePalBtn.title = _("savePalette"), _savePalBtn.setAttribute("aria-label", _("savePalette")), _savePalBtn.setAttribute("data-i18n-label", "savePalette"), _savePalBtn.addEventListener("click", () => {
       if (!C2.length) { k2(_("noSavedColors"), "warning"); return; }
-      const _name = window.prompt(_("paletteNamePrompt"), `My Palette ${_customPalettes.length + 1}`);
-      if (!_name || !_name.trim()) return;
-      _customPalettes.push({ name: _name.trim(), colors: [...C2] });
-      _saveCustomPalettes();
-      _rebuildPaletteNav(K, h2, r, L, Y);
-      m(_paletteCount() - 1);
-      k2(_("paletteSaved") + " ✓", "success");
+      // Electron 壳不实现 window.prompt（点了没反应）——面板小对话框替代
+      _hkDialog({ message: _("paletteNamePrompt"), needInput: true, defaultValue: `My Palette ${_customPalettes.length + 1}`, anchor: _savePalBtn, onOk: (_name) => {
+        _customPalettes.push({ name: _name, colors: [...C2] });
+        _saveCustomPalettes();
+        _rebuildPaletteNav(K, h2, r, L, Y);
+        m(_paletteCount() - 1);
+        k2(_("paletteSaved") + " ✓", "success");
+      } });
     }), V.appendChild(_savePalBtn);
     const _delPalBtn = document.createElement("button");
     _delPalBtn.type = "button", _delPalBtn.className = "hk-palette-delete-btn", _delPalBtn.innerHTML = "\u{1F5D1}\uFE0F", _delPalBtn.title = _("deletePalette"), _delPalBtn.setAttribute("aria-label", _("deletePalette")), _delPalBtn.setAttribute("data-i18n-label", "deletePalette"), _delPalBtn.style.display = "none", _delPalBtn.addEventListener("click", () => {
       if (!_isCustomPalette(o2)) return;
       const _idx = o2 - g2.length;
-      if (!window.confirm(_("confirmDeletePalette"))) return;
-      _customPalettes.splice(_idx, 1), _saveCustomPalettes();
-      o2 = 0, _rebuildPaletteNav(K, h2, r, L, Y), le(r2, 0), L(), Y();
-      k2(_("paletteDeleted"), "info");
+      // window.confirm 在 Electron 隐藏页面会静默返回 false —— 同上用小对话框
+      _hkDialog({ message: _("confirmDeletePalette"), anchor: _delPalBtn, onOk: () => {
+        _customPalettes.splice(_idx, 1), _saveCustomPalettes();
+        o2 = 0, _rebuildPaletteNav(K, h2, r, L, Y), le(r2, 0), L(), Y();
+        k2(_("paletteDeleted"), "info");
+      } });
     }), V.appendChild(_delPalBtn), B.appendChild(V), $.appendChild(B);
     const r2 = document.createElement("div");
     r2.className = "hk-palette-grid", r2.setAttribute("role", "group");
@@ -1935,6 +2024,10 @@ function D0() {
     }), J2 = [];
   }
   let _alignGap = 30;
+  // 子图时代：app.graph 恒为根图，进入子图后只有 app.canvas.graph 跟随视图
+  // （Pixaroma 同款实测结论）。选中节点/组、撤销成员校验都必须读"当前所见图"，
+  // 否则在子图内对齐/吸附/分组整批失灵。仅作读取回退，不修改任何根图状态。
+  const _curGraph = () => (window.app && window.app.canvas && window.app.canvas.graph) || (window.app && window.app.graph) || null;
   // 读侧与写侧（UI 验证 0-200）对称：只验 >=0 会放行 localStorage 里的超大值，
   // 流式排列把节点摊到几十亿像素外且只能手改输入框恢复（A5）
   try { const _g = parseInt(localStorage.getItem("hk-align-gap")); !isNaN(_g) && _g >= 0 && _g <= 200 && (_alignGap = _g); } catch {}
@@ -1959,7 +2052,7 @@ function D0() {
     }));
   }
   function _hkRestore(snapshot) {
-    const graph = window.app?.graph;
+    const graph = _curGraph();
     snapshot.forEach(s => {
       // Skip nodes no longer in the current graph (undo stack survives
       // workflow loads / node deletions) — same guard as _cRestore
@@ -2026,7 +2119,7 @@ function D0() {
     _cUpdateUndoRedo();
   }
   function _cRestore(snap) {
-    const graph = window.app?.graph;
+    const graph = _curGraph();
     snap.nodes.forEach(s => {
       if (s.n && graph && graph._nodes && graph._nodes.includes(s.n)) {
         s.n.color = s.color; s.n.bgcolor = s.bgcolor; s.n.groupcolor = s.groupcolor; s.n.textcolor = s.textcolor;
@@ -2307,7 +2400,7 @@ function D0() {
   function $2() {
     var c;
     if (!((c = window.app) != null && c.graph)) return;
-    const i = window.app.graph;
+    const i = _curGraph();
     A = Object.values(i._nodes || {}).filter((p) => p && p.is_selected), L2 = (Array.isArray(i._groups) ? i._groups : []).filter((p) => p && p.selected);
     A.forEach((p) => {
       if (!T2.has(p) && typeof p.computeSize == "function") { T2.set(p, p.computeSize.bind(p)); }

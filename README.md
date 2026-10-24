@@ -225,11 +225,12 @@ The custom color section supports independent title (T) and body (B) color editi
 - **SV + Hue picker**: Click the color preview to open an inline saturation/value + hue picker for precise color selection
 
 #### Drag-to-Snap Alignment
-When enabled (Alt+S or toolbar button), dragging nodes or groups snaps to nearby edges and centers with blue guide lines:
+When enabled (Alt+S or the toggle button in the panel header), dragging nodes or groups snaps to nearby edges and centers with blue guide lines:
 - Snaps to left, right, top, bottom, and center of other nodes and groups
 - **Sticky snap**: Targets within 1.5× snap distance get extra tolerance for natural alignment
 - **Shift bypass**: Hold Shift while dragging to temporarily disable snap
 - **Auto-bypass on UI**: Snap automatically disables when the pointer is over any panel UI element (panel, floating button, popups) — no conflicts
+- **Takes over grid snapping**: While a snap session is active, this plugin takes over the drop-time grid snap (the frontend's always-on "Always snap to grid" setting otherwise pulls an aligned position back to the grid on release) — grid snapping for new nodes and workflow loads outside a session is preserved; with this toggle off or Shift held, the previous behavior is kept (the frontend's Shift semantics mean snap-to-grid on drop)
 - Configurable snap distance (4–16 screen pixels) in the panel alignment section
 - Zero overhead when disabled (single boolean check)
 

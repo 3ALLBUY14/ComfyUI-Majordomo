@@ -36,7 +36,8 @@ const DEFAULT_COLOR = "#3f789e";
  * @returns {object|null} The created LGraphGroup, or null on failure.
  */
 function createGroupFromSelection() {
-  const graph = window.app && window.app.graph;
+  // 子图时代：进子图后只有 app.canvas.graph 跟随视图，组操作必须落在当前所见图
+  const graph = (window.app && window.app.canvas && window.app.canvas.graph) || (window.app && window.app.graph);
   if (!graph) return null;
 
   const selectedNodes = Object.values(graph._nodes || {}).filter(
@@ -341,7 +342,8 @@ function setGroupFontSize(size) {
   const n = Math.max(8, Math.min(300, Math.round(size)));
   // NaN/undefined input must not poison g.font_size through the public API (A6)
   if (!Number.isFinite(n)) return;
-  const graph = window.app && window.app.graph;
+  // 子图时代：进子图后只有 app.canvas.graph 跟随视图，组操作必须落在当前所见图
+  const graph = (window.app && window.app.canvas && window.app.canvas.graph) || (window.app && window.app.graph);
   if (!graph || !Array.isArray(graph._groups)) return;
 
   // Priority 1: groups directly selected (user clicked on group title)
@@ -376,7 +378,8 @@ function setGroupFontSize(size) {
  * @returns {number}
  */
 function getGroupFontSize() {
-  const graph = window.app && window.app.graph;
+  // 子图时代：进子图后只有 app.canvas.graph 跟随视图，组操作必须落在当前所见图
+  const graph = (window.app && window.app.canvas && window.app.canvas.graph) || (window.app && window.app.graph);
   if (!graph || !Array.isArray(graph._groups) || graph._groups.length === 0) {
     return (window.LiteGraph && window.LiteGraph.DEFAULT_GROUP_FONT_SIZE) || 20;
   }

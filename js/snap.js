@@ -44,7 +44,31 @@ const state = {
   _gestureSizes: null,     // gesture-start node sizes (resize guard)
   toolbarBtn: null,
   _panelCallbacks: [],     // panel snap-toggle state-change callbacks
+  _snapGuardFor: null,     // grid-snap guard: the graph instance already wrapped
 };
+
+// ── Frontend grid-snap guard ─────────────────────────────────────────────────
+// 新版前端在拖动结束（LGraphCanvas._processDraggedItems → graph.snapToGrid）
+// 会把选中项吸回网格——pysssss.SnapToGrid（前端原生设置，很多用户常开）开启时，
+// 我们对齐好的坐标会在松手瞬间被拽回网格（实测 407.5,394 → 410,390）：引导线还
+// 指着对齐位、位置却飞了，表现为"吸附不稳"。包装 graph.snapToGrid：本插件的
+// 吸附会话进行中直接忽略网格吸附调用，会话结束（resetDrag 清 dragInfo）后原样
+// 放行——新增节点、载入工作流时的网格吸附不受影响。不采用 alwaysSnapToGrid
+// 标志开关：前端的 pointerup 处理 stopPropagation（且监听为元素级 capture），
+// 事件时序不可依赖，按会话状态判断是最稳的挂点。Shift 旁路不受影响：前端对
+// Shift 的语义本就是"松手吸附到网格"，旁路时我们已先一步 resetDrag、放行给前端。
+function ensureGridSnapGuard() {
+  // 子图时代：松手网格吸附跑在"当前所见图"上（canvas.graph），守卫必须包住它
+  const g = (app.canvas && app.canvas.graph) || app.graph;
+  if (!g || !g._nodes || state._snapGuardFor === g) return;
+  if (typeof g.snapToGrid !== "function") return;
+  const orig = g.snapToGrid.bind(g);
+  g.snapToGrid = function (...args) {
+    if (state.dragInfo || state.groupDrag) return false;
+    return orig(...args);
+  };
+  state._snapGuardFor = g;
+}
 
 // ── Geometry utilities ───────────────────────────────────────────────────────
 
@@ -376,6 +400,7 @@ function onWindowPointerDown(e) {
   if (isOverHKUI(e)) return;
   const c = app.canvas;
   if (!c?.graph?._nodes) return;
+  ensureGridSnapGuard();
   // Snapshot node sizes for resize guard (skip malformed nodes — A4).
   // Ref-keyed: with duplicate ids an id-keyed map keeps only the last clone's
   // size and the resize guard misjudges (A2)
@@ -670,7 +695,10 @@ function installDrawHook() {
     const toScreenY = (gy) => (gy + offset[1]) * scale;
     ctx.save();
     ctx.strokeStyle = BRAND;
-    ctx.lineWidth = 1;
+    // 2px 虚线比 1px 实线醒目（用户反馈：1px 太细看不清）；屏幕像素坐标，
+    // 不随画布缩放，虚线段长在任意缩放下观感一致
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
     ctx.beginPath();
     for (const g of state.activeGuides.slice(0, 8)) {
       if (g.axis === "X") {
@@ -690,7 +718,7 @@ function installDrawHook() {
   _drawHookInstalled = true;
 }
 
-// ── Toolbar button ───────────────────────────────────────────────────────────
+// ── Panel header button ──────────────────────────────────────────────────────
 
 function injectToolbarCSS() {
   if (document.getElementById("hk-snap-css")) return;
@@ -703,6 +731,24 @@ function injectToolbarCSS() {
     .hk-snap-btn:not(.hk-snap-on):hover { opacity:0.8; }
     .hk-snap-btn.hk-snap-on { color:${BRAND} !important; }
     .hk-snap-btn.hk-snap-on:hover { filter:brightness(1.15); }
+    .hk-header-actions .hk-snap-btn {
+      background: rgba(139, 195, 243, 0.1);
+      border: 1px solid rgba(139, 195, 243, 0.25);
+      color: var(--hk-accent);
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .hk-header-actions .hk-snap-btn .hk-snap-icon { width: 13px; height: 13px; }
+    .hk-header-actions .hk-snap-btn .hk-snap-icon svg { width: 13px; height: 13px; display: block; }
+    .hk-header-actions .hk-snap-btn:hover { background: rgba(139, 195, 243, 0.25); transform: scale(1.1); }
+    .hk-header-actions .hk-snap-btn:active { transform: scale(0.92); }
   `;
   document.head.appendChild(style);
 }
@@ -730,31 +776,32 @@ window.HkSnap = {
 
 function mountToolbarButton() {
   if (state.toolbarBtn?.isConnected) return;
-  // Try Vue frontend floating toolbar first
-  const settingsGroupEl = app.menu?.settingsGroup?.element;
-  if (!settingsGroupEl) {
+  // 挂进插件面板标题栏按钮组（hk-header-actions 首位）。main.js 的 setup 先建面板、
+  // 再动态 import 本模块，正常到这一步标题栏已存在；短重试只兜异常时序，超时静默
+  // 放弃（Alt+S 热键不受影响）
+  const actions = document.querySelector(".hk-panel .hk-header-actions");
+  if (!actions) {
     if (mountToolbarButton._tries == null) mountToolbarButton._tries = 0;
-    if (++mountToolbarButton._tries > 40) return; // give up silently after ~10s
+    if (++mountToolbarButton._tries > 20) return; // give up silently after ~5s
     setTimeout(mountToolbarButton, 250);
     return;
   }
   injectToolbarCSS();
   const btn = document.createElement("button");
-  btn.className = "comfyui-button hk-snap-btn";
+  btn.type = "button";
+  btn.className = "hk-snap-btn";
   const btnTitle = () => snapLang() === "zh"
     ? "节点对齐拖拽吸附开关（Alt+S，按住 Shift 可临时绕过）"
     : "Toggle Node Alignment drag snap (Alt+S, hold Shift to bypass)";
   btn.title = btnTitle();
+  btn.setAttribute("aria-label", btnTitle());
   // Tooltip text is captured at mount; refresh lazily so a language toggle
   // in the Node Alignment panel (persisted to "hk-lang") is picked up
   // without a page reload.
-  btn.addEventListener("mouseenter", () => { btn.title = btnTitle(); });
+  btn.addEventListener("mouseenter", () => { btn.title = btnTitle(); btn.setAttribute("aria-label", btnTitle()); });
   btn.innerHTML = `<span class="hk-snap-icon">${ICON_SVG}</span>`;
   btn.addEventListener("click", toggleEnabled);
-  const group = document.createElement("div");
-  group.className = "comfyui-button-group";
-  group.appendChild(btn);
-  settingsGroupEl.before(group);
+  actions.prepend(btn);
   state.toolbarBtn = btn;
   updateToolbarTint();
 }
