@@ -4,11 +4,38 @@
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| [v1.0.3](#v103--2026-10-24) | 2026-10-24 | Group mute/bypass buttons; right-click color copy/paste; snap toggle in panel header; drop position no longer pulled back to grid; subgraph support |
 | [v1.0.2](#v102--2026-10-01) | 2026-10-01 | New-frontend compatibility: alignment & undo reliable again; snap/group fixes; color panel fixes; Alt+U shortcut |
 | [v1.0.1](#v101--2026-09-12) | 2026-09-12 | Fix: save-color button label matched behavior; zh close-hint aligned; snap tooltip refreshes after language switch; removed unused locales/ |
 | [v1](#v1--2026-07-28) | 2026-07-28 | Initial release: alignment panel, 14 palettes, dual-track color, drag-to-snap, quick group, font slider |
 
 ---
+
+## v1.0.3 — 2026-10-24
+
+### 🇬🇧 English
+
+- **🎛️ Group-wide mute / bypass** — select a group and hit **Mute group** / **Bypass group** (in the panel or the floating popup) to switch every contained node at once; click again to restore. Pinned nodes are skipped.
+- **🎨 Color copy / paste from the right-click menu** — copy colors from any node or group and paste onto another; the clipboard is shared across nodes and groups (pasting a node's two colors onto a group picks the more saturated one), multi-selection paints in one go with a count badge, and **Reset color** returns to theme colors.
+- **🧲 Aligned positions no longer snap back** — with the frontend's "Always snap to grid" enabled, releasing a drag used to pull aligned nodes back onto the grid. During a snap session the plugin now owns the drop-time grid snap; grid snapping for new nodes and workflow loads is untouched.
+- **🧬 Subgraph support** — alignment, snapping, grouping, group font size and the color menus now operate on the subgraph you are viewing instead of silently doing nothing.
+- **🛠 Group creation fix** — on newer frontends creating a group from a selection could collapse into an empty 20×48 shell; it now always wraps the selection correctly.
+- **💬 Toasts no longer stack** — rapid actions (mute toggling, Alt+U with an empty undo stack) show a single up-to-date notice instead of piling up.
+- **🧲 Snap toggle moved into the panel header** — beside the VRAM / language buttons instead of occupying ComfyUI's top toolbar; also visible on older frontends. Alt+S and Shift-bypass unchanged.
+- **📐 Guide lines are 2px dashed** — much easier to see; width is screen-space and stays constant across zoom levels.
+- **💾 Palette naming / delete dialog** — Electron shells don't implement window.prompt and silently reject window.confirm, so those buttons did nothing; they now use a small in-panel dialog (Enter to confirm, Esc to cancel, click outside to close) that never covers the panel or its avatar.
+
+### 🇨🇳 中文
+
+- **🎛️ 整组静音/旁路** — 选中组后点面板或浮窗弹窗里的「整组静音 / 整组旁路」，一次切换组内全部节点；再点一次恢复，钉住的节点自动跳过。
+- **🎨 右键颜色复制/粘贴/重置** — 右键节点或组即可复制颜色、粘贴给别的节点/组；剪贴板在节点与组之间跨类型共享（节点的双色粘到组上自动取更饱和的一方），多选时整批上色并带数量标注，「重置颜色」恢复主题默认。
+- **🧲 对齐结果不再被网格拽回** — 前端开启「总是吸附到网格」时，拖拽松手的一瞬间节点会被吸回网格、刚对齐的位置直接飞掉。现在吸附会话期间由插件接管松手时的网格吸附；新增节点、载入工作流等场景行为原样保留。
+- **🧬 子图支持** — 进入子图后，对齐、吸附、分组、组字号与颜色菜单都落在当前所见的子图上正常工作（此前会静默失灵）。
+- **🛠 创建分组修复** — 新版前端下从选区建组可能塌成 20×48 的空壳；现在任何情况下都能正确包裹选区。
+- **💬 提示不再叠罗汉** — 快速连续操作（整组切换、Alt+U 空撤等）只显示一条最新的提示。
+- **🧲 吸附开关移入面板标题栏** — 与清显存/语言按钮并列，不再占用 ComfyUI 顶部工具栏；旧版前端也能显示。Alt+S 与 Shift 临时绕过语义不变。
+- **📐 对齐引导线改 2px 虚线** — 明显更醒目；线宽按屏幕像素绘制，缩放不影响粗细。
+- **💾 调色板命名/删除改用对话框** — Electron 壳不实现 window.prompt、静默拒绝 window.confirm，此前两个按钮点了没反应；现为面板内小对话框（Enter 确认、Esc 取消、点外部关闭），且不遮挡面板与头像。
 
 ## v1.0.2 — 2026-10-01
 
