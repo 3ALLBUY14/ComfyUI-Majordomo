@@ -428,6 +428,13 @@ function onWindowPointerMove(e) {
   if (!c) { resetDrag(); return; }
   if (c.dragging_rectangle != null) { resetDrag(); return; }
   if (c.dragging_canvas) { resetDrag(); return; }
+  // 连线拖拽（从输入/输出插槽拉线，含拖动已有连线端点）：此时没有任何节点在动，
+  // 但下方 B6 的选择兜底会把选中节点当成"被拖节点"吸附挪走——表现为拉线定在
+  // 原地、节点反而被挪动（输入/输出两个方向都报过）。新前端连线态走
+  // linkConnector.renderLinks，经典 litegraph 是 connecting_output/_input/_slot。
+  const _lc = c.linkConnector;
+  if (_lc && ((_lc.renderLinks && _lc.renderLinks.length) || (_lc.state && _lc.state.draggingExistingLinks))) { resetDrag(); return; }
+  if (c.connecting_output || c.connecting_input || c.connecting_slot || c.connecting_pos) { resetDrag(); return; }
 
   // ── Group drag takes precedence ──
   // If the group this drag session tracked got deleted mid-gesture (Delete /
