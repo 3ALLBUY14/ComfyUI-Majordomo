@@ -393,7 +393,14 @@ function D0() {
     } catch {
     }
   }
+  let _toastEl = null, _toastTimer = 0;
   function k2(i, t = "info") {
+    // 单例：新提示直接替换旧的并重置消失计时——快速连点（整组静音/Alt+U 空撤等）
+    // 不会在同一位置叠出多层
+    if (_toastEl) {
+      clearTimeout(_toastTimer);
+      _toastEl.remove(), _toastEl = null;
+    }
     const o = document.createElement("div");
     o.textContent = i, o.style.cssText = `
             position: fixed;
@@ -411,9 +418,9 @@ function D0() {
             opacity: 0;
             transform: translateX(20px);
             transition: all 0.3s ease;
-        `, document.body.appendChild(o), setTimeout(() => {
+        `, document.body.appendChild(o), _toastEl = o, _toastTimer = setTimeout(() => {
       o.style.opacity = "1", o.style.transform = "translateX(0)";
-    }, 10), setTimeout(() => {
+    }, 10), _toastTimer = setTimeout(() => {
       o.style.opacity = "0", o.style.transform = "translateX(20px)", setTimeout(() => {
         o.parentNode && o.parentNode.removeChild(o);
       }, 300);
