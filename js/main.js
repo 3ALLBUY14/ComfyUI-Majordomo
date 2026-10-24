@@ -13,8 +13,71 @@ V0.registerExtension({
   },
   nodeCreated(T) {
     T.constructor.comfyClass === "node-alignment-panel" && (T.setSize([200, 100]), T.title && (T.title = "🎯 Alignment Panel Active"));
+  },
+  // 右键菜单：颜色复制/粘贴/重置（新前端上下文菜单 API；旧前端不识别这两个
+  // 属性、自动忽略）。取目标用前端自己的选中集，粘贴目标跨节点/组共享剪贴板。
+  getNodeMenuItems(node) {
+    return _nodeColorMenuItems(node);
+  },
+  getCanvasMenuItems(canvas) {
+    return _groupColorMenuItems(canvas);
   }
 });
+// ── 右键颜色复制/粘贴/重置 ───────────────────────────────────────────────────
+// 会话剪贴板跨节点/组共享：节点带 color+bgcolor 一对，组只有 color 一个；
+// 节点对粘贴到组时取饱和度较高的一方（组只有一个填充色）。
+let _colorClip = null;
+function _hkHexSat(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return -1;
+  const v2 = parseInt(m[1], 16), r = (v2 >> 16) & 255, g2 = (v2 >> 8) & 255, b = v2 & 255;
+  return Math.max(r, g2, b) - Math.min(r, g2, b);
+}
+function _hkMenuTargets(node) {
+  const sel = Object.values(V0.canvas?.selected_nodes || {});
+  return node.is_selected && sel.length > 1 ? sel : [node];
+}
+function _nodeColorMenuItems(node) {
+  if (!node) return [];
+  const T = (k) => (window.HkMenuBridge ? window.HkMenuBridge.t(k) : k);
+  const toast = (m, ty) => window.HkMenuBridge && window.HkMenuBridge.toast(m, ty);
+  const targets = _hkMenuTargets(node);
+  const suffix = targets.length > 1 ? ` (${targets.length})` : "";
+  const items = [null, { content: T("colorCopy") + suffix, callback: () => {
+    _colorClip = { color: node.color || null, bgcolor: node.bgcolor || null };
+    toast(T("colorCopied"), "success");
+  } }];
+  if (_colorClip) items.push({ content: T("colorPaste") + suffix, callback: () => {
+    targets.forEach((n) => { n.color = _colorClip.color, n.bgcolor = _colorClip.bgcolor; });
+    V0.canvas?.setDirty?.(true, true), toast(T("colorPasted") + suffix, "success");
+  } });
+  items.push({ content: T("colorReset") + suffix, callback: () => {
+    targets.forEach((n) => { n.color = null, n.bgcolor = null; });
+    V0.canvas?.setDirty?.(true, true), toast(T("colorResetDone") + suffix, "info");
+  } });
+  return items;
+}
+function _groupColorMenuItems(canvas) {
+  const g2 = canvas?.graph;
+  if (!g2?.getGroupOnPos) return [];
+  const T = (k) => (window.HkMenuBridge ? window.HkMenuBridge.t(k) : k);
+  const toast = (m, ty) => window.HkMenuBridge && window.HkMenuBridge.toast(m, ty);
+  const grp = g2.getGroupOnPos(canvas.graph_mouse[0], canvas.graph_mouse[1]);
+  if (!grp) return [];
+  const items = [null, { content: T("colorCopyGroup"), callback: () => {
+    _colorClip = { color: grp.color || null };
+    toast(T("colorCopied"), "success");
+  } }];
+  if (_colorClip) items.push({ content: T("colorPasteGroup"), callback: () => {
+    grp.color = _colorClip.bgcolor && _hkHexSat(_colorClip.bgcolor) > _hkHexSat(_colorClip.color) ? _colorClip.bgcolor : (_colorClip.color || _colorClip.bgcolor);
+    V0.canvas?.setDirty?.(true, true), toast(T("colorPasted"), "success");
+  } });
+  items.push({ content: T("colorResetGroup"), callback: () => {
+    grp.color = null;
+    V0.canvas?.setDirty?.(true, true), toast(T("colorResetDone"), "info");
+  } });
+  return items;
+}
 function D0() {
   try {
     if (window.LiteGraph && window.LiteGraph.LGraphNode) {
@@ -125,6 +188,21 @@ function D0() {
       alignGap: "Spacing",
       ok: "OK",
       cancel: "Cancel",
+      muteGroup: "Mute group",
+      bypassGroup: "Bypass group",
+      needSelectGroup: "Click a group title to select it",
+      groupModeMuted: "Group muted (click again to restore)",
+      groupModeBypassed: "Group bypassed (click again to restore)",
+      groupModeRestored: "Group restored",
+      colorCopy: "Copy color",
+      colorPaste: "Paste color",
+      colorReset: "Reset color",
+      colorCopied: "Color copied",
+      colorPasted: "Color pasted",
+      colorResetDone: "Color reset",
+      colorCopyGroup: "Copy group color",
+      colorPasteGroup: "Paste group color",
+      colorResetGroup: "Reset group color",
       undo: "Undo alignment",
       redo: "Redo alignment",
       noUndo: "Nothing to undo",
@@ -206,6 +284,21 @@ function D0() {
       alignGap: "间距",
       ok: "确定",
       cancel: "取消",
+      muteGroup: "整组静音",
+      bypassGroup: "整组旁路",
+      needSelectGroup: "先点击组标题选中组",
+      groupModeMuted: "已整组静音（再点一次恢复）",
+      groupModeBypassed: "已整组旁路（再点一次恢复）",
+      groupModeRestored: "已恢复运行",
+      colorCopy: "复制颜色",
+      colorPaste: "粘贴颜色",
+      colorReset: "重置颜色",
+      colorCopied: "颜色已复制",
+      colorPasted: "颜色已粘贴",
+      colorResetDone: "颜色已重置",
+      colorCopyGroup: "复制组颜色",
+      colorPasteGroup: "粘贴组颜色",
+      colorResetGroup: "重置组颜色",
       undo: "撤销对齐",
       redo: "重做对齐",
       noUndo: "没有可撤销的操作",
@@ -263,6 +356,8 @@ function D0() {
   function _(i) {
     return ue[x2][i] || ue.en[i] || i;
   }
+  // 顶层右键菜单函数（registerExtension 处）不在本闭包内，够不着 _/k2 —— 桥接
+  window.HkMenuBridge = { t: (k) => _(k), toast: (msg, ty) => k2(msg, ty) };
   function De() {
     var i;
     try {
@@ -1551,6 +1646,26 @@ function D0() {
       _grpBtn.addEventListener("click", () => {
         ze(), Y(), _hkCreateGroup();
       }), Z.appendChild(_grpBtn);
+      // 整组静音/旁路（与面板同款行为：作用于选中的组，再点恢复）
+      const _grpModeRow = document.createElement("div");
+      _grpModeRow.style.cssText = "display:flex;gap:8px;margin-top:8px";
+      const _popupModeBtnStyle = "flex:1;padding:5px 0;border:1px solid #444;border-radius:4px;background:#222;color:#ccc;cursor:pointer;font-size:11px";
+      const _popupModeClick = (mode, okKey) => () => {
+        const r = window.HkGroups && window.HkGroups.setGroupMode ? window.HkGroups.setGroupMode(mode) : -1;
+        r === -1 ? k2(_("needSelectGroup"), "warning") : k2(_(r === 0 ? "groupModeRestored" : okKey), r === 0 ? "info" : "success");
+      };
+      const _pm = document.createElement("button");
+      _pm.type = "button", _pm.className = "hk-group-mode-btn", _pm.textContent = _("muteGroup"), _pm.setAttribute("data-i18n", "muteGroup");
+      _pm.title = _("muteGroup"), _pm.setAttribute("aria-label", _("muteGroup")), _pm.setAttribute("data-i18n-label", "muteGroup");
+      _pm.style.cssText = _popupModeBtnStyle, _pm.disabled = !0;
+      _pm.addEventListener("click", _popupModeClick(2, "groupModeMuted"));
+      _grpModeRow.appendChild(_pm);
+      const _pb = document.createElement("button");
+      _pb.type = "button", _pb.className = "hk-group-mode-btn", _pb.textContent = _("bypassGroup"), _pb.setAttribute("data-i18n", "bypassGroup");
+      _pb.title = _("bypassGroup"), _pb.setAttribute("aria-label", _("bypassGroup")), _pb.setAttribute("data-i18n-label", "bypassGroup");
+      _pb.style.cssText = _popupModeBtnStyle, _pb.disabled = !0;
+      _pb.addEventListener("click", _popupModeClick(4, "groupModeBypassed"));
+      _grpModeRow.appendChild(_pb), Z.appendChild(_grpModeRow);
       const _fsRow = document.createElement("div");
       _fsRow.className = "hk-grp-font-row";
       const _fsLabel = document.createElement("span");
@@ -1605,6 +1720,9 @@ function D0() {
       });
       const _gBtn = Z.querySelector(".hk-create-group-btn");
       if (_gBtn) _gBtn.disabled = z.length < 1;
+      // 整组静音/旁路跟随"是否有选中的组"
+      const _grpSel = !!(m && Array.isArray(m._groups) && m._groups.some((Q) => Q && Q.selected));
+      Z.querySelectorAll(".hk-group-mode-btn").forEach((Q) => { Q.disabled = !_grpSel; });
       const _fs = Z.querySelector(".hk-grp-font-slider");
       if (_fs && window.HkGroups && window.HkGroups.getGroupFontSize) {
         const _v2 = window.HkGroups.getGroupFontSize();
@@ -1755,6 +1873,27 @@ function D0() {
         _snapInput.value = window.HkSnap ? window.HkSnap.getSnapDist() : 8;
       }
     }), _gapRow.appendChild(_snapLabel), _gapRow.appendChild(_snapInput), G.appendChild(_gapRow);
+    // 组操作行：整组静音/旁路（作用于选中的组，组内已全是该状态时再点恢复）
+    const _groupRow = document.createElement("div");
+    _groupRow.style.cssText = "display:flex;gap:8px;margin-top:8px;padding:0 4px";
+    const _grpBtnStyle = "flex:1;padding:4px 0;border:1px solid #444;border-radius:4px;background:#222;color:#ccc;cursor:pointer;font-size:11px";
+    _grpMuteBtn = document.createElement("button");
+    _grpMuteBtn.type = "button", _grpMuteBtn.className = "hk-group-mode-btn", _grpMuteBtn.textContent = _("muteGroup"), _grpMuteBtn.setAttribute("data-i18n", "muteGroup");
+    _grpMuteBtn.title = _("muteGroup"), _grpMuteBtn.setAttribute("aria-label", _("muteGroup")), _grpMuteBtn.setAttribute("data-i18n-label", "muteGroup");
+    _grpMuteBtn.style.cssText = _grpBtnStyle, _grpMuteBtn.disabled = !0;
+    _grpMuteBtn.addEventListener("click", () => {
+      const r = window.HkGroups && window.HkGroups.setGroupMode ? window.HkGroups.setGroupMode(2) : -1;
+      r === -1 ? k2(_("needSelectGroup"), "warning") : k2(_(r === 0 ? "groupModeRestored" : "groupModeMuted"), r === 0 ? "info" : "success");
+    }), _groupRow.appendChild(_grpMuteBtn);
+    _grpBypassBtn = document.createElement("button");
+    _grpBypassBtn.type = "button", _grpBypassBtn.className = "hk-group-mode-btn", _grpBypassBtn.textContent = _("bypassGroup"), _grpBypassBtn.setAttribute("data-i18n", "bypassGroup");
+    _grpBypassBtn.title = _("bypassGroup"), _grpBypassBtn.setAttribute("aria-label", _("bypassGroup")), _grpBypassBtn.setAttribute("data-i18n-label", "bypassGroup");
+    _grpBypassBtn.style.cssText = _grpBtnStyle, _grpBypassBtn.disabled = !0;
+    _grpBypassBtn.addEventListener("click", () => {
+      const r = window.HkGroups && window.HkGroups.setGroupMode ? window.HkGroups.setGroupMode(4) : -1;
+      r === -1 ? k2(_("needSelectGroup"), "warning") : k2(_(r === 0 ? "groupModeRestored" : "groupModeBypassed"), r === 0 ? "info" : "success");
+    }), _groupRow.appendChild(_grpBypassBtn);
+    G.appendChild(_groupRow);
     _loadCustomPalettes();
     const $ = ke(), g = H2(_("presetPalettes"), "presetPalettes");
     g.classList.add("hk-color-section-title"), $.appendChild(g);
@@ -2037,6 +2176,7 @@ function D0() {
   // 而预览框不含标题仍显示有缝，造成"预览有缝、落地粘死"。与 group.js 组边界算法同一约定。
   const _nodeTitleH = () => (window.LiteGraph && window.LiteGraph.NODE_TITLE_HEIGHT) || 30;
   let _hkUndoBtn = null, _hkRedoBtn = null;
+  let _grpMuteBtn = null, _grpBypassBtn = null;
   let _hkUndoStack = [], _hkRedoStack = [];
   const _HK_MAX_UNDO = 50;
   function _hkSnapshot(nodes) {
@@ -2417,6 +2557,10 @@ function D0() {
       const d = p.dataset.alignmentType === "size-min";
       p.disabled = d ? A.length < 1 : !a;
     });
+    // 组操作按钮跟随"是否有选中的组"（L2）
+    const _grpOk = L2 && L2.length > 0;
+    if (_grpMuteBtn) _grpMuteBtn.disabled = !_grpOk;
+    if (_grpBypassBtn) _grpBypassBtn.disabled = !_grpOk;
   }
   function q2(i) {
     const t = {}, o = i.filter((a) => a && a.id !== void 0 && a.id !== null);

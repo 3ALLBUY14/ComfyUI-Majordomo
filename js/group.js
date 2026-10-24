@@ -68,7 +68,20 @@ function createGroupFromSelection() {
   // It calculates bounds from node.boundingRect (which includes title bars),
   // then shifts the group up by titleHeight so the group title sits above nodes.
   if (typeof group.resizeTo === "function") {
-    group.resizeTo(selectedNodes, PAD);
+    // 新前端 createBounds 读 item.boundingRect，但该属性在新前端不随渲染维护
+    // （实测恒为 [0,0,0,0]），原生 resizeTo 会塌成 20x48 空壳——按 pos/size+标题高
+    // 现算边界喂入（boundingRect 语义：标题条在 pos[1] 上方、高含标题，与下方
+    // _manualResizeTo 同一约定），title 平移/网格展开仍由原生逻辑完成
+    const th = (window.LiteGraph && window.LiteGraph.NODE_TITLE_HEIGHT) || 30;
+    const boxes = selectedNodes.map((n) => ({
+      boundingRect: [
+        n.pos[0],
+        n.pos[1] - th,
+        (n.size && n.size[0]) || 150,
+        ((n.size && n.size[1]) || 100) + th,
+      ],
+    }));
+    group.resizeTo(boxes, PAD);
   } else {
     // Fallback for older LiteGraph versions without resizeTo
     _manualResizeTo(group, selectedNodes, PAD);
@@ -395,6 +408,31 @@ function getGroupFontSize() {
   return graph._groups[0].font_size || 20;
 }
 
+// ── Group-wide mute / bypass ─────────────────────────────────────────────────
+
+// 选中组的整组模式切换：mode=2 静音(NEVER)、4 旁路(BYPASS)；组内全部节点已是
+// 该状态时再点一次恢复 ALWAYS(0)。成员取原生 recomputeInsideNodes（几何包含，
+// 嵌套组的节点按位置一并算入），钉住节点跳过。返回实际写入的模式或 -1（无选中组）。
+function setGroupMode(mode) {
+  const graph = (window.app && window.app.canvas && window.app.canvas.graph) || (window.app && window.app.graph);
+  if (!graph || !Array.isArray(graph._groups)) return -1;
+  const selGroups = graph._groups.filter((g) => g && g.selected);
+  if (selGroups.length === 0) return -1;
+  const members = [];
+  for (const g of selGroups) {
+    if (typeof g.recomputeInsideNodes === "function") g.recomputeInsideNodes();
+    for (const n of g._nodes || []) {
+      if (n && !n.flags?.pinned && members.indexOf(n) === -1) members.push(n);
+    }
+  }
+  if (members.length === 0) return -1;
+  const allMatch = members.every((n) => n.mode === mode);
+  const next = allMatch ? 0 : mode;
+  for (const n of members) n.mode = next;
+  window.app.canvas?.setDirty?.(true, true);
+  return next;
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 window.HkGroups = window.HkGroups || {};
@@ -403,6 +441,7 @@ Object.assign(window.HkGroups, {
   patchGroupFont,
   setGroupFontSize,
   getGroupFontSize,
+  setGroupMode,
 });
 
-export { createGroupFromSelection, patchGroupFont };
+export { createGroupFromSelection, patchGroupFont, setGroupMode };
