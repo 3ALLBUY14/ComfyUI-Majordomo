@@ -247,6 +247,7 @@ function D0() {
       groupCreated: "Group created",
       selectToGroup: "Select nodes to create group",
       groupFontSize: "Group font",
+      groupFontPresetHint: "Right-click / F2 to edit",
       eyedropper: "Eyedropper (pick from screen)",
       snapDistance: "Snap",
       applyColor: "Apply color",
@@ -343,6 +344,7 @@ function D0() {
       groupCreated: "已创建分组",
       selectToGroup: "请选择节点以创建分组",
       groupFontSize: "组字体",
+      groupFontPresetHint: "右键 / F2 修改",
       eyedropper: "屏幕取色滴管",
       snapDistance: "吸附",
       applyColor: "应用颜色",
@@ -761,6 +763,10 @@ function D0() {
     if (_fsLabEl) _fsLabEl.textContent = _("groupFontSize");
     const _fsSlEl = document.querySelector(".hk-align-popup .hk-grp-font-slider");
     if (_fsSlEl) _fsSlEl.setAttribute("aria-label", _("groupFontSize"));
+    document.querySelectorAll(".hk-grp-font-preset").forEach((el) => {
+      el.title = `${_("groupFontSize")} ${el.textContent} · ${_("groupFontPresetHint")}`;
+      el.setAttribute("aria-label", el.title);
+    });
   }
   function Ae(i) {
     if (typeof i !== "string") return null;
@@ -1622,6 +1628,11 @@ function D0() {
     const Z = document.createElement("div");
     Z.className = "hk-align-popup", document.body.appendChild(Z);
     let a2 = !1;
+    const _syncFontPresets = (value) => {
+      Z.querySelectorAll(".hk-grp-font-preset").forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(Number(btn.textContent) === Number(value)));
+      });
+    };
     const r2 = () => {
       if (a2) return;
       a2 = !0, [
@@ -1687,6 +1698,7 @@ function D0() {
         if (window.HkGroups && window.HkGroups.setGroupFontSize) {
           window.HkGroups.setGroupFontSize(parseInt(_fsSlider.value, 10));
         }
+        _syncFontPresets(_fsSlider.value);
       });
       _fsVal.addEventListener("input", () => {
         let _n = parseInt(_fsVal.value, 10);
@@ -1696,6 +1708,7 @@ function D0() {
         if (window.HkGroups && window.HkGroups.setGroupFontSize) {
           window.HkGroups.setGroupFontSize(_n);
         }
+        _syncFontPresets(_n);
       });
       _fsVal.addEventListener("blur", () => {
         let _n = parseInt(_fsVal.value, 10);
@@ -1710,6 +1723,63 @@ function D0() {
       _fsSlider.addEventListener("mousedown", (e) => { e.stopPropagation(); });
       _fsSlider.addEventListener("pointerdown", (e) => { e.stopPropagation(); });
       _fsRow.appendChild(_fsLabel), _fsRow.appendChild(_fsSlider), _fsRow.appendChild(_fsVal), Z.appendChild(_fsRow);
+      const _presetKey = "hk-group-font-presets";
+      let _presets = [20, 40, 60, 80, 100];
+      try {
+        const saved = JSON.parse(localStorage.getItem(_presetKey));
+        if (Array.isArray(saved) && saved.length === 5 && saved.every((n) => Number.isInteger(n) && n >= 10 && n <= 300)) _presets = saved;
+      } catch {}
+      const _presetRow = document.createElement("div");
+      _presetRow.className = "hk-grp-font-presets";
+      _presetRow.addEventListener("mousedown", (e) => e.stopPropagation());
+      _presetRow.addEventListener("pointerdown", (e) => e.stopPropagation());
+      _presets.forEach((size, index) => {
+        const btn = document.createElement("button");
+        btn.type = "button", btn.className = "hk-grp-font-preset";
+        const update = () => {
+          btn.textContent = String(_presets[index]);
+          btn.title = `${_("groupFontSize")} ${btn.textContent} · ${_("groupFontPresetHint")}`;
+          btn.setAttribute("aria-label", btn.title);
+          _syncFontPresets(_fsSlider.value);
+        };
+        btn.addEventListener("click", () => {
+          _fsSlider.value = _presets[index];
+          _fsSlider.dispatchEvent(new Event("input"));
+        });
+        const edit = (e) => {
+          e.preventDefault(), e.stopPropagation();
+          const input = document.createElement("input");
+          input.type = "number", input.min = "10", input.max = "300", input.step = "1";
+          input.className = "hk-grp-font-preset-input", input.value = _presets[index];
+          input.setAttribute("aria-label", _("groupFontPresetHint"));
+          let finished = false;
+          const finish = (save) => {
+            if (finished) return;
+            finished = true;
+            const n = Number(input.value);
+            if (save && input.value.trim() && Number.isInteger(n) && n >= 10 && n <= 300) {
+              _presets[index] = n;
+              try { localStorage.setItem(_presetKey, JSON.stringify(_presets)); } catch {}
+            }
+            input.replaceWith(btn), update();
+          };
+          input.addEventListener("blur", () => finish(true));
+          input.addEventListener("keydown", (event) => {
+            event.stopPropagation();
+            if (event.key === "Enter" || event.key === "Escape") {
+              event.preventDefault(), finish(event.key === "Enter"), btn.focus();
+            }
+          });
+          btn.replaceWith(input), input.focus(), input.select();
+        };
+        btn.addEventListener("contextmenu", edit);
+        btn.addEventListener("keydown", (e) => { if (e.key === "F2") edit(e); });
+        _presetRow.appendChild(btn), update();
+      });
+      Z.appendChild(_presetRow);
+      const _presetHint = document.createElement("div");
+      _presetHint.className = "hk-grp-font-preset-hint", _presetHint.textContent = _("groupFontPresetHint");
+      _presetHint.setAttribute("data-i18n", "groupFontPresetHint"), Z.appendChild(_presetHint);
     }, h2 = () => {
       if (!v) return;
       const m = v.getBoundingClientRect(), C = 220, z = 12, P = m.right + z + C < window.innerWidth;
@@ -1736,6 +1806,7 @@ function D0() {
         _fs.value = _v2;
         const _fv = Z.querySelector(".hk-grp-font-val");
         if (_fv) _fv.value = _v2;
+        _syncFontPresets(_v2);
       }
     }, L = () => {
       r2(), r(), h2(), N.classList.remove("visible"), F && (window.clearTimeout(F), F = void 0), Z.offsetWidth, requestAnimationFrame(() => {
@@ -1743,6 +1814,7 @@ function D0() {
       });
     }, Y = () => {
       Z.classList.remove("visible"), ze();
+      Z.querySelector(".hk-grp-font-preset-input")?.blur();
     };
     document.addEventListener("mousedown", (m) => {
       if (!Z.classList.contains("visible")) return;
@@ -1756,8 +1828,7 @@ function D0() {
       }
     }), Z.addEventListener("mouseleave", () => {
       if (Z.classList.contains("visible")) {
-        const _fsInp = Z.querySelector(".hk-grp-font-val");
-        if (_fsInp && _fsInp === document.activeElement) return;
+        if (Z.contains(document.activeElement) && document.activeElement.matches(".hk-grp-font-val, .hk-grp-font-preset-input")) return;
         Y();
       }
     });

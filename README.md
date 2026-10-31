@@ -116,6 +116,8 @@ Select nodes or groups, then click a swatch. Choose a preset palette or your own
 | **Mute / bypass a group** | Click a group title to select it, then choose “Mute group” or “Bypass group.” Click again to restore; pinned nodes are skipped. |
 | **Handy extras** | Switch languages or free VRAM and RAM from the header. Move the panel, adjust its opacity, and keep organizing inside subgraphs. |
 
+Group titles have **20 / 40 / 60 / 80 / 100** font-size presets. Right-click or press **F2** to customize a preset; editing does not apply it immediately. Resizing expands the title upward without moving the nodes. Group titles use white text by default.
+
 <br>
 
 ## Shortcuts

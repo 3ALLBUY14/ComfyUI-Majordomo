@@ -551,6 +551,75 @@ export const panelCSS = `
     background: rgba(139, 195, 243, 0.12);
 }
 
+.hk-grp-font-presets {
+    display: flex;
+    gap: 5px;
+    padding: 2px 8px 0;
+}
+
+.hk-grp-font-preset,
+.hk-grp-font-preset-input {
+    flex: 1 1 0;
+    min-width: 0;
+    width: 0;
+    box-sizing: border-box;
+    height: 24px;
+    padding: 0 2px;
+    border: 1px solid rgba(139, 195, 243, 0.2);
+    border-radius: var(--hk-radius-sm, 4px);
+    background: rgba(139, 195, 243, 0.06);
+    color: var(--hk-text-strong, #dfe7f0);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.hk-grp-font-preset {
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.hk-grp-font-preset:hover {
+    background: rgba(139, 195, 243, 0.14);
+    border-color: rgba(139, 195, 243, 0.45);
+}
+
+.hk-grp-font-preset[aria-pressed="true"] {
+    color: var(--hk-accent, #4a9eff);
+    background: rgba(139, 195, 243, 0.16);
+    border-color: var(--hk-accent, #4a9eff);
+}
+
+.hk-grp-font-preset:active {
+    background: rgba(139, 195, 243, 0.25);
+}
+
+.hk-grp-font-preset:focus-visible,
+.hk-grp-font-preset-input:focus {
+    outline: 2px solid var(--hk-accent, #4a9eff);
+    outline-offset: 2px;
+}
+
+.hk-grp-font-preset-input::-webkit-inner-spin-button,
+.hk-grp-font-preset-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.hk-grp-font-preset-input:invalid {
+    border-color: #e78b8b;
+}
+
+.hk-grp-font-preset-hint {
+    padding: 0 8px 2px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--hk-text-muted, #8899aa);
+    text-align: right;
+}
+
 /* Floating button hover hint */
 .hk-float-hint {
     position: fixed;

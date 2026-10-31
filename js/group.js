@@ -220,24 +220,6 @@ function patchGroupFont() {
   const DEFAULT_COLOUR   = LG.LGraphGroup.defaultColour || '#335';
   const BOX_OUTLINE_CLR  = LG.NODE_BOX_OUTLINE_COLOR || '#FFF';
 
-  // Title text colour with readable contrast against the group colour. The
-  // native (v20.3+) draw computes a luminance-based _titleTextColor; this draw
-  // replacement used to paint the title in the group colour itself, which is
-  // unreadable for dark groups (the default palette ships #000000) — F7.
-  // Accepts '#rgb' / '#rrggbb'; anything else falls back to the '#335' probe.
-  // ponytail: no alpha / rgb() / named-colour parsing — the colour sources in
-  // this extension all emit hex; widen here if that ever changes.
-  function readableTitleColor(col) {
-    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(col || ''));
-    const hex = m
-      ? (m[1].length === 3
-          ? m[1].split('').map((c) => parseInt(c + c, 16))
-          : [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16)])
-      : [51, 51, 85];
-    // Rec.601 perceived luminance; below ~0.5 → dark background → light text
-    return (0.299 * hex[0] + 0.587 * hex[1] + 0.114 * hex[2]) / 255 < 0.5 ? '#FFF' : '#000';
-  }
-
   // ── Patch titleHeight getter ──────────────────────────────────────────
   // New kernel (v20.3+): returns fixed NODE_TITLE_HEIGHT (30)
   // Old kernel: returns this.font_size * 1.4
@@ -296,7 +278,7 @@ function patchGroupFont() {
     ctx.font = `${fontSize}px ${GROUP_FONT}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = readableTitleColor(color);   // luminance contrast vs group bg (F7)
+    ctx.fillStyle = '#FFF';
     ctx.fillText(this.title + (this.pinned ? '📌' : ''), x + PAD, y + fontSize);
 
     // --- Highlight selected group (replicates native strokeShape for BOX) ---
@@ -348,6 +330,7 @@ patchGroupFont();
 /**
  * Set font_size on selected groups (or all groups if none selected).
  * Priority: directly selected groups > groups containing selected nodes > all groups.
+ * Keep the title bar's lower edge and the group bottom fixed as the title grows upward.
  * Triggers a canvas redraw so the change is immediately visible.
  * @param {number} size  Font size in pixels (clamped to 8–300)
  */
@@ -377,7 +360,17 @@ function setGroupFontSize(size) {
   }
 
   targets.forEach((g) => {
+    const oldTitleHeight = g.titleHeight;
     g.font_size = n;
+    const delta = g.titleHeight - oldTitleHeight;
+    const pos = g._pos || g.pos;
+    const boundsSize = g._size || g.size;
+    if (Number.isFinite(delta) && pos && boundsSize) {
+      // Resize the header only; moving a group through move() would also move its nodes.
+      const bottom = pos[1] + boundsSize[1];
+      pos[1] -= delta;
+      boundsSize[1] = bottom - pos[1];
+    }
   });
 
   // Trigger redraw
