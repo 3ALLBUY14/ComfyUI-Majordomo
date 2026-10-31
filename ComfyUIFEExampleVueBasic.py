@@ -12,14 +12,7 @@ class NodeAlignmentPanel(ComfyNodeABC):
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {
-            "required": {},
-            "optional": {},
-            "hidden": {
-                "extra_pnginfo": "EXTRA_PNGINFO",
-                "prompt": "PROMPT"
-            }
-        }
+        return {"required": {}, "optional": {}, "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "prompt": "PROMPT"}}
 
     RETURN_TYPES = ()
     RETURN_NAMES = ()
