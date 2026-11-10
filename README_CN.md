@@ -19,6 +19,10 @@
   <a href="#常见问题">问答</a>
 </p>
 
+### 29 秒，看节点从凌乱到有序
+
+https://github.com/user-attachments/assets/b787ec7f-3391-495d-9768-62686e12441a
+
 <details>
 <summary>查看整理前后对比</summary>
 

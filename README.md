@@ -19,6 +19,10 @@ Node Alignment Panel · Turn scattered nodes into a clear workflow.
   <a href="#faq">FAQ</a>
 </p>
 
+### From clutter to clarity in 29 seconds
+
+https://github.com/user-attachments/assets/4bfa770b-f2d6-4bf3-a472-544ff1b8937c
+
 <details>
 <summary>See the before-and-after comparison</summary>
 
